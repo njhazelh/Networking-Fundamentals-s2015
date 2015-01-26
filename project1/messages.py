@@ -1,3 +1,5 @@
+import math, socket
+
 __author__ = 'Nick'
 
 
@@ -36,7 +38,7 @@ class StatusMessage(Message):
         elif self.op == "*":
             return self.left * self.right
         elif self.op == "/":
-            return self.left / self.right
+            return math.floor(self.left / self.right)
         else:
             raise Exception("Operation not recognized")
 
@@ -44,7 +46,8 @@ class StatusMessage(Message):
         return False
 
     def do(self, connection):
-        connection.write("cs2500spring2015 {}\n".format(self.answer))
+        response = "cs5700spring2015 {}\n".format(self.answer)
+        connection.sendall(response.encode())
 
 
 class ByeMessage(Message):
@@ -63,5 +66,5 @@ class ByeMessage(Message):
 
     def do(self, connection):
         print(self.secret)
-        connection.shutdown()
+        connection.shutdown(socket.SHUT_RDWR)
         connection.close()

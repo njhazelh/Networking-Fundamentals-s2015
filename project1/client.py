@@ -1,5 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
+import sys
 import re
 import argparse
 import socket
@@ -12,7 +13,7 @@ __author__ = 'Nick Jones'
 
 
 def model_data(data):
-    statusRegex = re.compile("cs5700spring2015 STATUS (\d+) ([\+,\-,\*,\/]) (\d+)\n")
+    statusRegex = re.compile("cs5700spring2015 STATUS (\d+) ([\+,\-,\*,/]) (\d+)")
     result = statusRegex.match(data)
     if result is not None:
         return messages.StatusMessage(int(result.group(1)), result.group(2), int(result.group(3)))
@@ -29,7 +30,7 @@ def parse_message(conn, data):
     """
     message = model_data(data)
     message.do(conn)
-    return message.isFinal()
+    return message.is_final()
 
 
 def make_connection(secure, hostname, port):
@@ -42,7 +43,11 @@ def make_connection(secure, hostname, port):
 
 def send_recv_loop(conn):
     while True:
-        final = parse_message(conn, conn.read(256))
+        message = conn.recv(256).decode()
+        if message == "":
+            raise Exception("message empty")
+            break
+        final = parse_message(conn, message)
         if final:
             break
 
@@ -59,7 +64,7 @@ def main(args):
     :return: Return nothing.
     """
     conn = make_connection(args.secure, args.hostname, args.port)
-    conn.write("cs5700spring2015 HELLO {}\n" % args.id)
+    conn.sendall("cs5700spring2015 HELLO {}\n".format(args.id).encode())
     send_recv_loop(conn)
 
 
@@ -70,4 +75,6 @@ if __name__ == "__main__":
     parser.add_argument("hostname", help="The hostname of the server")
     parser.add_argument("id", help="The NEU id of the student running the program.  Must have all leading zeros.")
     args = parser.parse_args()
+    if "-p" not in sys.argv and args.secure:
+        args.port = 27994
     main(args)
