@@ -37,5 +37,5 @@ messages received.
 Initially we tested our code by running it as it progressed. After achieving a
 functional state, we stabilized the code and added unit tests #TDD.
 
-These tests can be run using "python -m unittest discover" in the project
+These tests can be run using "make test" in the project
 folder.
