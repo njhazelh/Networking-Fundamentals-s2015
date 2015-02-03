@@ -4,13 +4,14 @@ import re
 
 __author__ = 'Nick'
 
+
 class Message(object):
     """
     This class serves as an interface for all other Message subclasses.
     """
 
     @staticmethod
-    def modelData(data):
+    def model_data(data):
         """
         Take a message in a String and convert it to the appropriate object.
         :param data: The message from the server
@@ -21,12 +22,12 @@ class Message(object):
         for type in types:
             result = type.match(data)
             if result is not None:
-                return type.fromRegex(result)
+                return type.from_regex(result)
 
-        raise MessageParseException("Message not recognized: {}".format(data))
+        raise MessageParseException("Message not recognized:\n\t{}".format(data))
 
     @classmethod
-    def fromRegex(cls, regexMatch):
+    def from_regex(cls, regexMatch):
         """
         This method provides a way to construct an instance of this class from
         the result of a regex match.
@@ -57,6 +58,8 @@ class StatusMessage(Message):
         cs5700spring2015 [solution]\n
     """
 
+    PATTERN = re.compile("cs5700spring2015 STATUS (\d+) ([\+,\-,\*,/]) (\d+)\n")
+
     def __init__(self, left, op, right):
         """
         Constructor using data from an expression. eg. 3 + 45
@@ -64,18 +67,23 @@ class StatusMessage(Message):
         :param op: The operation from the expression. eg. +.
         :param right: The right number from the expression. eg. 45.
         """
+        if left < 1 or left > 1000 or right < 1 or right > 1000:
+            raise MessageParseException("Numbers in STATUS were out of range (1,1000)")
         self.left = left
         self.op = op
         self.right = right
 
     @classmethod
-    def fromRegex(cls, regexMatch):
+    def from_regex(cls, regexMatch):
         """
         Construct an instance of StatusMessage from the result of a match.
         :param regexMatch: The result of a regex match operation.  See match below.
         :return: A StatusMessage object.
         """
-        return cls(int(regexMatch.group(1)), regexMatch.group(2), int(regexMatch.group(3)))
+        num1 = int(regexMatch.group(1))
+        op = regexMatch.group(2)
+        num2 = int(regexMatch.group(3))
+        return cls(num1, op, num2)
 
     @staticmethod
     def match(data):
@@ -85,8 +93,7 @@ class StatusMessage(Message):
         :return: None if the message does not match, else a matched object with the
         significant data in groups.
         """
-        pattern = re.compile("cs5700spring2015 STATUS (\d+) ([\+,\-,\*,/]) (\d+)\n")
-        return pattern.match(data)
+        return StatusMessage.PATTERN.match(data)
 
     @property
     def answer(self):
@@ -128,6 +135,8 @@ class ByeMessage(Message):
     The correct response to this is to print the secret and close the connection.
     """
 
+    PATTERN = re.compile("cs5700spring2015 ([a-fA-F0-9]+) BYE\n")
+
     def __init__(self, secret):
         """
         :param secret: The 64-byte secret form the message.
@@ -136,7 +145,7 @@ class ByeMessage(Message):
         self.secret = secret
 
     @classmethod
-    def fromRegex(cls, regexMatch):
+    def from_regex(cls, regexMatch):
         """
         Create an instance of ByeMessage using the data contained in a regex
         match.  See match below.
@@ -154,8 +163,7 @@ class ByeMessage(Message):
         :param data: The String to match against.
         :return: A regex match object if the String matches.  Else, None.
         """
-        pattern = re.compile("cs5700spring2015 ([a-fA-F0-9]+) BYE\n")
-        return pattern.match(data)
+        return ByeMessage.PATTERN.match(data)
 
     def is_final(self):
         """

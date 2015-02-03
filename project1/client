@@ -5,7 +5,7 @@ import argparse
 import socket
 import ssl
 
-from messages import Message, EmptyMessageException
+from messages import Message, EmptyMessageException, MessageParseException
 
 
 __author__ = 'Nick Jones'
@@ -17,9 +17,13 @@ def parse_message(conn, data):
     :param data: The data from the server
     :return: True if the message is the final message from the server. Else false.
     """
-    message = Message.modelData(data)
-    message.do(conn)
-    return message.is_final()
+    try:
+        message = Message.model_data(data)
+        message.do(conn)
+        return message.is_final()
+    except MessageParseException as e:
+        print(e)
+        sys.exit(0)
 
 
 def make_connection(secure, hostname, port):
@@ -66,9 +70,13 @@ def main(args):
 
     :return: Return nothing.
     """
-    conn = make_connection(args.secure, args.hostname, args.port)
-    conn.sendall("cs5700spring2015 HELLO {}\n".format(args.id).encode())
-    send_recv_loop(conn)
+    try:
+        conn = make_connection(args.secure, args.hostname, args.port)
+        conn.sendall("cs5700spring2015 HELLO {}\n".format(args.id).encode())
+        send_recv_loop(conn)
+    except Exception as e:
+        print(e)
+        sys.exit(0)
 
 
 if __name__ == "__main__":

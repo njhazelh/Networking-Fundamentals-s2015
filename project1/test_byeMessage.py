@@ -9,7 +9,7 @@ __author__ = 'Nick'
 class TestByeMessage(TestCase):
     def test_fromRegex(self):
         regex = ByeMessage.match("cs5700spring2015 aaaa BYE\n")
-        self.assertIsInstance(ByeMessage.fromRegex(regex), ByeMessage)
+        self.assertIsInstance(ByeMessage.from_regex(regex), ByeMessage)
 
     def test_match(self):
         # Matches pattern
@@ -27,4 +27,4 @@ class TestByeMessage(TestCase):
         self.assertIsNone(ByeMessage.match("cs5700spring2015 a BYE"))
 
     def test_is_final(self):
-        self.assertTrue(ByeMessage.fromRegex(ByeMessage.match("cs5700spring2015 a BYE\n")))
+        self.assertTrue(ByeMessage.from_regex(ByeMessage.match("cs5700spring2015 a BYE\n")))
