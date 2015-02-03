@@ -4,7 +4,6 @@ import re
 
 __author__ = 'Nick'
 
-
 class Message(object):
     """
     This class serves as an interface for all other Message subclasses.
@@ -150,6 +149,8 @@ class ByeMessage(Message):
     def match(data):
         """
         Match a String to this message type and extract the important information.
+        Does not expect the secret to be of exact length, because it seemed better to report
+        whatever was found.  Secret is expected to be in hexidecimal though.
         :param data: The String to match against.
         :return: A regex match object if the String matches.  Else, None.
         """

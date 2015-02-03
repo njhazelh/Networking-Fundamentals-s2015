@@ -1,10 +1,8 @@
 #Team the-one-percent
-=====================
 This project was designed according to the standards laid out in 
 [Project 1](http://david.choffnes.com/classes/cs4700sp15/project1.php)
 
 ##Approach
-==========
 The idea behind this project was rather simple.  There was little need to
 maintain state, and no need to utilize lower level feature such as memory 
 management.  What was important was a simple interface with network sockets, the 
@@ -28,7 +26,6 @@ about was calling the do method to react and the isFinal method to check if we
 should exit.
 
 ##Challenges
-============
 The most significant challenge encountered was learning Python. Although we had
 some experience working with the language, it took a little work to work out
 the structure that used Python in the most appropriate manner.
@@ -37,6 +34,8 @@ Additionally, we needed to build the correct regex patterns to match the
 messages received.
 
 ##Testing
-=========
 Initially we tested our code by running it as it progressed. After achieving a
 functional state, we stabilized the code and added unit tests #TDD.
+
+These tests can be run using "python -m unittest discover" in the project
+folder.

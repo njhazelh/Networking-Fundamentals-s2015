@@ -5,7 +5,7 @@ import argparse
 import socket
 import ssl
 
-import messages
+from messages import Message, EmptyMessageException
 
 
 __author__ = 'Nick Jones'
@@ -17,7 +17,7 @@ def parse_message(conn, data):
     :param data: The data from the server
     :return: True if the message is the final message from the server. Else false.
     """
-    message = messages.Message.modelData(data)
+    message = Message.modelData(data)
     message.do(conn)
     return message.is_final()
 
@@ -49,7 +49,7 @@ def send_recv_loop(conn):
     while True:
         message = conn.recv(256).decode()
         if message == "":
-            raise messages.EmptyMessageException("Message from server empty.  Something went wrong.")
+            raise EmptyMessageException("Message from server empty.  Something went wrong.")
         final = parse_message(conn, message)
         if final:
             break
