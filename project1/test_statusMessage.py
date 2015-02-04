@@ -1,4 +1,5 @@
 from unittest import TestCase
+import sys
 
 from messages import StatusMessage, MessageParseException
 
@@ -27,6 +28,7 @@ class TestStatusMessage(TestCase):
         for x in range(1, 1001):
             for y in range(1, 1001):
                 for op in ["+", "-", "*", "/"]:
+                    sys.stdout.write("Testing: {:4d} {} {:4d}\r".format(x, op, y))
                     match = StatusMessage.match("cs5700spring2015 STATUS {} {} {}\n".format(x, op, y))
                     msg = StatusMessage.from_regex(match)
                     self.assertEqual(msg.left, x)
