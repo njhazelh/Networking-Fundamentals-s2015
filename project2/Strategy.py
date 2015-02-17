@@ -1,6 +1,6 @@
 __author__ = "Nick Jones"
 
-import Browser
+from Browser import Browser
 from UrlEncodedForm import UrlEncodedForm
 from HttpServerMessage import HTTP_STATUS
 
@@ -65,7 +65,8 @@ class Strategy:
             }
             self.browser.post("/accounts/login/?next=/fakebook/", str(form), headers)
             loginResponse = self.browser.getResponse()
-            if loginResponse.status_code == HTTP_STATUS.MOVED_PERM
+            if loginResponse.status_code == HTTP_STATUS.FOUND:
+                loggedIn = True
         self._parseResponse(self.browser.getResponse())
 
 

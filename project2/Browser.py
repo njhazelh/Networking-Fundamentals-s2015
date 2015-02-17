@@ -1,6 +1,7 @@
 __author__ = 'Nick Jones'
 
-import BrowserState, HttpSocket
+from HttpSocket import HttpSocket
+from BrowserState import BrowserState
 from HttpClientMessage import HTTP_METHOD, HttpClientMessage
 from HttpServerMessage import HttpServerMessage
 
@@ -46,10 +47,10 @@ class Browser:
         message = HttpClientMessage(method, file, body, headers)
         self.socket.send(message)
 
-    def get(self, file, headers):
+    def get(self, file, headers={}):
         self.request(HTTP_METHOD.GET, file, None, headers)
 
-    def post(self, file, body=None, headers=None):
+    def post(self, file, body=None, headers={}):
         self.request(HTTP_METHOD.POST, file, body, headers)
 
     def getResponse(self):
@@ -63,4 +64,7 @@ class Browser:
             return HttpServerMessage(self.socket)
 
     def hasVisited(self, link):
-        return link in self.state.history()
+        return link in self.state.history
+
+    def close(self):
+        pass

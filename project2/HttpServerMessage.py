@@ -25,6 +25,7 @@ class HttpServerMessage:
         """
         # TODO: A lot of fancy reading to get the entire message and nothing more.
         # see https://hg.python.org/cpython/file/2.7/Lib/httplib.py as a reference
+        pass
 
     def get_header(self, key):
         return self.headers[key]

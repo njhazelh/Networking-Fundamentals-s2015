@@ -1,4 +1,4 @@
-
+__author__ = "Nick Jones"
 
 class BrowserState:
     """
@@ -6,21 +6,23 @@ class BrowserState:
     Information received from the server, gets stored here and pulled when
     new messages get created.
     """
-    def __init__():
+    def __init__(self):
         self.history = []
         self.cookies = []
 
-class Cookie:
-    """
-    This class represents a single HTTP cookie.
-    """
-    def __init__():
+    def apply_to(self, msg):
+        """
+        Add all the cookies and stuff to a new client message
+        :param msg:
+        :return:
+        """
         pass
 
-class Address:
-    """
-    This class reprsents a single visited URL.  It may not be needed, since
-    Python may contain the required classes already.
-    """
-    def __init__():
+    def apply_from(self, msg):
+        """
+        Add new cookies and stuff from a new message from the server
+        :param msg:
+        :return:
+        """
         pass
+

@@ -1,13 +1,19 @@
 __author__ = 'njhazelh'
 
-import binascii, re
+import binascii
+import re
+
 
 def encode(string):
-    good = re.compile("[a-zA-Z0-9 ]")
-    string = map(lambda c: "%" + str(binascii.hexlify(c.encode()), "ascii") if not good.match(c) else c, string)
+    alphaNumSpace = re.compile("[a-zA-Z0-9 ]")
+    string = \
+        map(lambda c: "%" +
+                      str(binascii.hexlify(c.encode()), "ascii") if not alphaNumSpace.match(c) else c,
+            string)
     string = "".join(string)
     string = string.replace(" ", "+")
     return string
+
 
 class UrlEncodedForm:
     def __init__(self, values):
@@ -17,4 +23,3 @@ class UrlEncodedForm:
         return "&".join(["{}={}".format(encode(key),
                                         encode(self.values[key]))
                          for key in self.values])
-
