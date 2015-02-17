@@ -1,15 +1,12 @@
-#Networking Fundamentals Project 2
-Nick Jones
-Michelle Sun
+default:
+	echo "Python doesn't need compiling"
 
-##Overview
-...
+clean:
+	rm -rf __pycache__
+	rm -f *.pyc
 
-##Problems
-...
+run:
+	./webcrawler 001111718 7R63P2NO
 
-##Running
-...
-
-##Testing
-...
+test:
+	python3 -m unittest discover
