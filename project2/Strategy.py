@@ -124,6 +124,7 @@ class Strategy:
 
     def _print_flags(self):
         sys.stdout.write("\n".join(self.flags))
+        sys.stdout.flush()
 
     def cleanup(self):
         """

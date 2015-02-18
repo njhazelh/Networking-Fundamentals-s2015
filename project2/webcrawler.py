@@ -7,7 +7,10 @@ import logging
 from Strategy import Strategy
 
 
-logging.basicConfig()
+logging.basicConfig(
+    format='[%(asctime)s] {%(filename)-20s:%(lineno)-3d} %(levelname)s - %(message)s',
+    datefmt='%I:%M:%S'
+)
 log = logging.getLogger("webcrawler")
 
 
