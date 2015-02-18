@@ -23,12 +23,11 @@ class Strategy:
 
     def _find_links(self, msg):
         found_links = []
-        soup = BeautifulSoup(msg)
+        soup = BeautifulSoup(msg.body)
         for a in soup.find_all('a'):
             if 'href' in a.attrs:
-                #print(a['href'])
                 found_links.append(a['href'])
-        return
+        return found_links
 
     def _parseResponse(self, msg):
         """
@@ -47,8 +46,7 @@ class Strategy:
             # TODO: add the new link to the frontier
             return
         elif msg.status_code == HTTP_STATUS.FOUND:
-            # TODO: Add the next link to the frontier
-            return
+            self.frontier.append(msg.get_header("location")) # TODO: clean up this link
         elif msg.status_code == HTTP_STATUS.NOT_FOUND:
             # Move on
             return
@@ -72,11 +70,10 @@ class Strategy:
         }
         self.browser.post("/accounts/login/?next=/fakebook/", str(form), headers)
         loginResponse = self.browser.get_response()
-
         if loginResponse.status_code != HTTP_STATUS.FOUND:
             raise FailedLoginException()
 
-        self._parseResponse(self.browser.get_response())
+        self._parseResponse(loginResponse)
 
 
     def run(self, username, password):
