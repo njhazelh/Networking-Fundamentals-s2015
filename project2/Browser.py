@@ -1,8 +1,10 @@
+from Exceptions import LockedDomainException, NoDestinationException
+
 __author__ = 'Nick Jones'
 
 from HttpSocket import HttpSocket
 from BrowserState import BrowserState
-from HttpClientMessage import HTTP_METHOD, HttpClientMessage
+from HttpClientMessage import HttpClientMessage
 from HttpServerMessage import HttpServerMessage
 
 
@@ -27,14 +29,16 @@ class Browser:
         :param domain: The domain the browser should be locked to.
         """
         self.domain = domain
+        self.socket.lock_domain(domain)
 
     def unlock_domain(self):
         """
         Allow the browser to access resources on all domains.
         """
         self.domain = None
+        self.socket.unlock_domain()
 
-    def request(self, method, file, body=None, headers=None):
+    def request(self, method, file, body=None, headers=None, dest=None):
         """
         A generic method for making HTTP requests to a server.
         :param method: The HTTP Method
@@ -43,28 +47,39 @@ class Browser:
         :param headers:
         :return:
         """
+        if self.domain is not None and dest is not None and dest != self.domain:
+            raise LockedDomainException(dest)
+        elif self.domain is not None:
+            dest = self.domain
+        elif dest is None and self.domain is None:
+            raise NoDestinationException()
+
         self.response = None
         message = HttpClientMessage(method, file, body, headers)
-        self.socket.send(message)
+        self.state.apply_to(message)
+        self.socket.send(dest, message)
 
-    def get(self, file, headers={}):
-        self.request(HTTP_METHOD.GET, file, None, headers)
+    def get(self, file, headers={}, dest=None):
+        self.request("GET", file, None, headers, dest)
 
-    def post(self, file, body=None, headers={}):
-        self.request(HTTP_METHOD.POST, file, body, headers)
+    def post(self, file, body=None, headers={}, dest=None):
+        self.request("POST", file, body, headers, dest)
 
-    def getResponse(self):
+    def get_response(self):
         """
         Get the response from the previous message.
         :return:
         """
-        if self.response is not None:
-            return self.response
-        else:
-            return HttpServerMessage(self.socket)
+        if self.response is None:
+            self.response = HttpServerMessage(self.socket)
+            self.state.apply_from(self.response)
+        return self.response
 
-    def hasVisited(self, link):
+    def get_cookie(self, key):
+        return self.state.get_cookie(key)
+
+    def has_visited(self, link):
         return link in self.state.history
 
     def close(self):
-        pass
+        self.socket.close()

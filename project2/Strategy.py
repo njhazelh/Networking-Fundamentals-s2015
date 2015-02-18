@@ -1,8 +1,13 @@
+from Exceptions import FailedLoginException
+
 __author__ = "Nick Jones"
 
+from bs4 import BeautifulSoup
 from Browser import Browser
 from UrlEncodedForm import UrlEncodedForm
 from HttpServerMessage import HTTP_STATUS
+
+DOMAIN = ("cs5700sp15.ccs.neu.edu", 80)
 
 class Strategy:
     """
@@ -14,11 +19,16 @@ class Strategy:
     def __init__(self):
         self.frontier = []
         self.browser = Browser()
-        self.browser.lock_domain("cs5700sp15.ccs.neu.edu")
+        self.browser.lock_domain(DOMAIN)
 
     def _find_links(self, msg):
-        # TODO: Find the links in the html
-        return []
+        found_links = []
+        soup = BeautifulSoup(msg)
+        for a in soup.find_all('a'):
+            if 'href' in a.attrs:
+                #print(a['href'])
+                found_links.append(a['href'])
+        return
 
     def _parseResponse(self, msg):
         """
@@ -28,7 +38,7 @@ class Strategy:
             # Find links and add them to the frontier
             links = self._find_links(msg)
             for link in links:
-                if link not in self.frontier and not self.browser.hasVisited(link):
+                if link not in self.frontier and not self.browser.has_visited(link):
                     self.frontier.append(link)
         elif msg.status_code == HTTP_STATUS.FORBIDDEN:
             # Give up on this resource
@@ -51,23 +61,22 @@ class Strategy:
 
 
     def _login(self, username, password):
-        loggedIn = False
+        self.browser.get("/accounts/login/?next=/fakebook/")
+        self.browser.get_response()
+        csrf_token = self.browser.get_cookie('csrftoken').value
+        form = UrlEncodedForm({"username": username,
+                               "password": password,
+                               "csrfmiddlewaretoken": csrf_token})
+        headers = {
+            "content-type": "application/x-www-form-urlencoded"
+        }
+        self.browser.post("/accounts/login/?next=/fakebook/", str(form), headers)
+        loginResponse = self.browser.get_response()
 
-        while not loggedIn:
-            self.browser.get("/accounts/login/?next=/fakebook/")
-            response = self.browser.getResponse()
-            csrf_token = response.get_header('CSRF-TOKEN')
-            form = UrlEncodedForm({"username": username,
-                                   "password": password,
-                                   "csrfmiddlewaretoken": csrf_token})
-            headers = {
-                "Content-type": "application/x-www-form-urlencoded"
-            }
-            self.browser.post("/accounts/login/?next=/fakebook/", str(form), headers)
-            loginResponse = self.browser.getResponse()
-            if loginResponse.status_code == HTTP_STATUS.FOUND:
-                loggedIn = True
-        self._parseResponse(self.browser.getResponse())
+        if loginResponse.status_code != HTTP_STATUS.FOUND:
+            raise FailedLoginException()
+
+        self._parseResponse(self.browser.get_response())
 
 
     def run(self, username, password):
@@ -79,7 +88,7 @@ class Strategy:
         while len(self.frontier) is not 0:
             next_resource = self.frontier.pop()
             self.browser.get(next_resource)
-            self._parseResponse(self.browser.getResponse())
+            self._parseResponse(self.browser.get_response())
 
         self.cleanup()
 

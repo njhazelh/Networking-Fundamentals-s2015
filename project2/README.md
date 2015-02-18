@@ -1,9 +1,9 @@
-#Networking Fundamentals Project 2
+#Networking Fundamentals: Project 2: Webcrawler
 ####Nick Jones, Michelle Suk
 
 ##Overview
-This project is a simple webcrawler that uses HTTP to find a series of
-5 secret keys hidden thoughout Fakebook.
+This project is a simple web-crawler that uses HTTP to find a series of
+5 secret keys hidden throughout Fakebook.
 
 ##Problems
 The biggest issue encountered was that we didn't know
@@ -15,7 +15,7 @@ we would have the Content-length header, so we could
 read that many bytes.
 
 ##Running
-To run run `./webcrawler \[username] \[password]`
+To run run `./webcrawler [username] [password]`
 
 ##Testing
 To test, run `make test`

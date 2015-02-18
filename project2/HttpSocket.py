@@ -1,6 +1,9 @@
 __author__ = "Nick Jones"
 
-MAX_LINE = 16
+import socket
+
+from Exceptions import LockedDomainException
+
 
 class HttpSocket:
     """
@@ -11,33 +14,42 @@ class HttpSocket:
     """
 
     def __init__(self):
+        self.dest = None
         self.socket = None
-        self.buffer = []
+        self.locked_domain = None
+        self.locked = False
 
-    def send(self, msg):
+    def send(self, dest, msg):
         """
         Send the message somehow.
         """
+        if self.dest is None or self.dest != dest:
+            self.connect(dest)
+
         self.socket.send(str(msg).encode())
 
-    def read_line(self):
-        if len(self.buffer) is 0:
-            self.buffer.append(self.socket.recv(MAX_LINE))
-
-    def read(self, bytes):
-        buffer_size = len(self.buffer)
-        amount_to_read = bytes - buffer_size
-        remaining = []
-
-        if amount_to_read > 0:
-            while amount_to_read is not 0:
-                more_data = self.socket.recv(amount_to_read)
-                remaining.append(more_data)
-                amount_to_read -= len(more_data)
-            result = self.buffer + remaining
-            self.buffer = []
+    def connect(self, dest):
+        if self.locked and self.locked_domain != dest:
+            raise LockedDomainException(dest)
+        elif dest == self.dest:
+            return
         else:
-            result = self.buffer[:bytes]
-            self.buffer = self.buffer[bytes:]
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect(dest)
+            self.dest = dest
 
-        return result
+    def close(self):
+        if self.socket is not None:
+            self.socket.close()
+            self.socket = None
+
+    def lock_domain(self, domain):
+        self.locked = True
+        self.locked_domain = domain
+
+    def unlock_domain(self):
+        self.locked = False
+        self.locked_domain = None
+
+    def get_socket(self):
+        return self.socket
