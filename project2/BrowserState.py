@@ -1,4 +1,9 @@
+import re
+from CookieCache import CookieCache
+
 __author__ = "Nick Jones"
+
+COOKIE_PATTERN = re.compile("")
 
 class BrowserState:
     """
@@ -8,7 +13,7 @@ class BrowserState:
     """
     def __init__(self):
         self.history = []
-        self.cookies = []
+        self.cookies = CookieCache()
 
     def apply_to(self, msg):
         """
@@ -16,7 +21,8 @@ class BrowserState:
         :param msg:
         :return:
         """
-        pass
+        cookie_string = "; ".join(["{}={}".format(cookie.key, cookie.value) for cookie in self.cookies])
+        msg.headers['Cookie'] = cookie_string
 
     def apply_from(self, msg):
         """
@@ -24,5 +30,9 @@ class BrowserState:
         :param msg:
         :return:
         """
-        pass
+        for cookie in msg.cookies:
+            self.cookies.add_cookie(cookie)
+
+    def get_cookie(self, key):
+        return self.cookies.get_cookie(key)
 

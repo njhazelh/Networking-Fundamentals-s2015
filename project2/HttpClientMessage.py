@@ -1,11 +1,4 @@
-from enum import Enum
-
-class HTTP_METHOD(Enum):
-    """
-    This is an enum representing the various HTTP methods
-    """
-    GET = 1
-    POST = 2
+__author__ = "Nick Jones"
 
 class HttpClientMessage:
     """
@@ -21,17 +14,23 @@ class HttpClientMessage:
         "User-Agent": "FailSauce/0.1",
     }
 
-    def __init__(self, method, file, body, headers):
+    def __init__(self, method, resource, body, headers):
         self.method =  method
-        self.file = file
-        self.body = body
+        self.resource = resource
+        if body is None:
+            self.body = ""
+        else:
+            self.body = body
         self.headers = HttpClientMessage.DEFAULT_HEADERS.copy()
         self.headers.update(headers)
-        self.headers["Content-Length"] = len(body)
+        if body is not None:
+            self.headers["Content-length"] = len(body)
+        else:
+            self.headers["Content-length"] = 0
         self.version = HttpClientMessage.DEFAULT_VERSION
 
     def __str__(self):
-        status = "{} {} {}".format(self.method.name, self.file, self.version)
+        status = "{} {} {}".format(self.method, self.resource, self.version)
 
         headers = []
         for key in self.headers:
