@@ -1,19 +1,19 @@
 #! /usr/bin/python3
 
-import argparse, timeit
+import argparse, time
 from Strategy import Strategy
 
 def main(args):
     """
     Create and run the strategy
     """
-    start = timeit.timeit()
+    start = time.time()
     strategy = Strategy()
     strategy.run(args.username, args.password)
-    end = timeit.timeit()
-    seconds = int(end - start)
-    minutes = int(seconds / 60)
-    seconds = seconds % 60
+    end = time.time()
+    diff = end - start
+    minutes = int(diff / 60)
+    seconds = int(diff % 60)
     print("Ran in {} minutes {} seconds".format(minutes, seconds))
 
 if __name__ == "__main__":

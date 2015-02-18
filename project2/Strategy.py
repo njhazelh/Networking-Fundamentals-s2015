@@ -42,44 +42,31 @@ class Strategy:
     def _find_links(self, msg):
         found_links = []
         soup = BeautifulSoup(msg.body)
-        for a in soup.find_all('a'):
-            if 'href' in a.attrs:
-                found_links.append(a['href'])
+        for a in soup.find_all('a', href=True):
+            found_links.append(a['href'])
         return self._clean_and_filter_links(found_links)
 
     def _find_flags(self, msg):
-        soup = BeautifulSoup(msg)
-        for a in soup.find_all('h2'):
-            if 'class' in a.attrs:
-                if 'secret_flag' in a['class']:
-                    self._add_flag(a.body)
+        soup = BeautifulSoup(msg.body)
+        for a in soup.find_all('h2', class_="secret_flag"):
+            self._add_flag(a.string)
 
     def _parseResponse(self, resource, msg):
         """
         Find all links in the body and add them to the frontier if they're not already there or visited
         """
         if msg.status_code == HTTP_STATUS.OK:
-            # Find links and add them to the frontier
+            self._find_flags(msg)
             links = self._find_links(msg)
             for link in links:
                 if link not in self.frontier and not self.browser.has_visited(link):
                     self.frontier.append(link)
-        elif msg.status_code == HTTP_STATUS.FORBIDDEN:
-            # Give up on this resource
-            return
         elif msg.status_code == HTTP_STATUS.MOVED_PERM:
             self.frontier.append(msg.get_header("location"))
         elif msg.status_code == HTTP_STATUS.FOUND:
             self.frontier.append(msg.get_header("location"))
-        elif msg.status_code == HTTP_STATUS.NOT_FOUND:
-            # Move on
-            return
         elif msg.status_code == HTTP_STATUS.SERVER_ERROR:
-            # Add the file to the frontier again.
             self.frontier.append(resource)
-        else:
-            # Status not recognized, which isn't surprising
-            return
 
 
     def _login(self, username, password):
@@ -105,8 +92,6 @@ class Strategy:
         self._login(username, password)
 
         while len(self.frontier) is not 0 and not self._is_done():
-            sys.stdout.write("\r{} files visited".format(len(self.browser.state.history)))
-            sys.stdout.flush()
             next_resource = self.frontier.pop()
             response = self.browser.get(next_resource)
             self._parseResponse(next_resource, response)
@@ -116,7 +101,7 @@ class Strategy:
     def _add_flag(self, flag):
         result = FLAG_PATTERN.match(flag)
         if result is not None:
-            print(flag, "\n")
+            print(result.group(1))
             self.flags.add(result.group(1))
 
     def _is_done(self):
