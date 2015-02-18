@@ -30,6 +30,18 @@ class Strategy:
                 found_links.append(a['href'])
         return
 
+    def _find_flags(self, msg):
+        # TEMPORARY:  Trying to find secret flags
+        # TODO: Make sure flag is not already in secret flags list
+        secret_flags = []
+        soup = BeautifulSoup(msg)
+        for a in soup.find_all('h2'):
+            if 'class' in a.attrs:
+                if 'secret_flag' in a['class']:
+                    # TODO: Store secret flag sequence
+                    return
+        return
+
     def _parseResponse(self, msg):
         """
         Find all links in the body and add them to the frontier if they're not already there or visited
