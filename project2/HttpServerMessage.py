@@ -54,11 +54,12 @@ class HttpServerMessage:
     def _read_headers(self, file):
         key = ""
         while True:
-            line = file.readline().decode("utf-8")
-            self.last_line = line
+            line = file.readline()
 
             if line is None:
                 raise EmptySocketException()
+
+            line = line.decode("utf-8")
 
             if ":" not in line:
                 break
@@ -92,15 +93,36 @@ class HttpServerMessage:
     def _read_body(self, size, file):
         data = ""
         while size > 0:
-            if data is None:
+            new_data = file.read(size)
+            if new_data is None:
                 raise EmptySocketException()
-            new_data = file.read(size).decode("utf-8")
+            new_data = new_data.decode("utf-8")
             size -= len(new_data)
             data += new_data
         self.body = data
 
     def _read_chunked(self, file):
-        print(self.last_line)
+        body = ""
+        while True:
+            size_line = file.readline()
+            if size_line is None:
+                raise EmptySocketException()
+            size_line = size_line.decode("utf-8").strip()
+            size = int(size_line, 16)
+            if size == 0:
+                break
+            data = ""
+            while size > 0:
+                new_data = file.read(size)
+                if new_data is None:
+                    raise EmptySocketException()
+                new_data = new_data.decode("utf-8")
+                size -= len(new_data)
+                data += new_data
+            body += data
+            file.read(2) # read line \r\n
+        self.body = body
+        self._read_headers(file)
 
 
     def get_header(self, key):
