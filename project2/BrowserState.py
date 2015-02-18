@@ -12,7 +12,7 @@ class BrowserState:
     new messages get created.
     """
     def __init__(self):
-        self.history = []
+        self.history = set()
         self.cookies = CookieCache()
 
     def apply_to(self, msg):
@@ -36,3 +36,8 @@ class BrowserState:
     def get_cookie(self, key):
         return self.cookies.get_cookie(key)
 
+    def visit(self, file):
+        self.history.add(file)
+
+    def has_visited(self, file):
+        return file in self.history

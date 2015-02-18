@@ -23,23 +23,29 @@ class HttpSocket:
         """
         Send the message somehow.
         """
-        if self.dest is None or self.dest != dest:
+        if self.dest is None or self.dest != dest or self.socket is None:
             self.connect(dest)
+        data = str(msg).encode()
+        while True:
+            sent = self.socket.sendall(data)
+            if sent is None:
+                break
+            else:
+                self.connect(dest)
 
-        self.socket.send(str(msg).encode())
 
     def connect(self, dest):
         if self.locked and self.locked_domain != dest:
             raise LockedDomainException(dest)
-        elif dest == self.dest:
-            return
         else:
+            self.close()
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect(dest)
             self.dest = dest
 
     def close(self):
         if self.socket is not None:
+            self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
             self.socket = None
 

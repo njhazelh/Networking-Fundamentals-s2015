@@ -1,4 +1,4 @@
-from Exceptions import LockedDomainException, NoDestinationException
+from Exceptions import LockedDomainException, NoDestinationException, EmptySocketException
 
 __author__ = 'Nick Jones'
 
@@ -57,13 +57,20 @@ class Browser:
         self.response = None
         message = HttpClientMessage(method, file, body, headers)
         self.state.apply_to(message)
-        self.socket.send(dest, message)
+        self.state.visit(file)
+
+        while True:
+            self.socket.send(dest, message)
+            try:
+                return self.get_response()
+            except EmptySocketException:
+                continue
 
     def get(self, file, headers={}, dest=None):
-        self.request("GET", file, None, headers, dest)
+        return self.request("GET", file, None, headers, dest)
 
     def post(self, file, body=None, headers={}, dest=None):
-        self.request("POST", file, body, headers, dest)
+        return self.request("POST", file, body, headers, dest)
 
     def get_response(self):
         """
@@ -73,13 +80,18 @@ class Browser:
         if self.response is None:
             self.response = HttpServerMessage(self.socket)
             self.state.apply_from(self.response)
+            self.apply_response(self.response)
         return self.response
+
+    def apply_response(self, response):
+        if response.safe_get_header("connection") == "close":
+            self.socket.close()
 
     def get_cookie(self, key):
         return self.state.get_cookie(key)
 
     def has_visited(self, link):
-        return link in self.state.history
+        return self.state.has_visited(link)
 
     def close(self):
         self.socket.close()
