@@ -20,8 +20,10 @@ class MissingHeaderException(Exception):
 class LockedDomainException(Exception):
     pass
 
+
 class NoDestinationException(Exception):
     pass
+
 
 class FailedLoginException(Exception):
     pass

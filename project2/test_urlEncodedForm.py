@@ -1,7 +1,10 @@
 from unittest import TestCase
+
 from UrlEncodedForm import UrlEncodedForm
 
+
 __author__ = 'njhazelh'
+
 
 class TestUrlEncodedForm(TestCase):
     def test___str__(self):

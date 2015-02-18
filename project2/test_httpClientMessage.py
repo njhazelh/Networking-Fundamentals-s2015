@@ -1,7 +1,10 @@
 from unittest import TestCase
+
 from HttpClientMessage import HttpClientMessage
 
+
 __author__ = 'njhazelh'
+
 
 class TestHttpClientMessage(TestCase):
     def test___str__(self):

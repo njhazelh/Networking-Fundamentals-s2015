@@ -1,5 +1,6 @@
 __author__ = "Nick Jones"
 
+
 class HttpClientMessage:
     """
     This class contains the HTTP/1.1 protocol.  To create a method, use the
@@ -15,7 +16,7 @@ class HttpClientMessage:
     }
 
     def __init__(self, method, resource, body, headers):
-        self.method =  method
+        self.method = method
         self.resource = resource
         if body is None:
             self.body = ""

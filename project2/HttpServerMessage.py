@@ -3,6 +3,9 @@ from CookieCache import CookieCache
 __author__ = 'njhazelh'
 
 from Exceptions import BadHeaderException, BadStatusException, EmptySocketException, MissingHeaderException
+import logging
+
+log = logging.getLogger("webcrawler")
 
 
 class HTTP_STATUS:
@@ -102,6 +105,7 @@ class HttpServerMessage:
         self.body = data
 
     def _read_chunked(self, file):
+        log.debug("Reading a chunked message")
         body = ""
         while True:
             size_line = file.readline()
@@ -120,7 +124,7 @@ class HttpServerMessage:
                 size -= len(new_data)
                 data += new_data
             body += data
-            file.read(2) # read line \r\n
+            file.read(2)  # read line \r\n
         self.body = body
         self._read_headers(file)
 

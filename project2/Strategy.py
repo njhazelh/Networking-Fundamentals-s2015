@@ -1,18 +1,24 @@
-import sys
 import re
-from Exceptions import FailedLoginException
-
-__author__ = "Nick Jones"
+import logging
+from urllib.parse import urlparse
+import sys
 
 from bs4 import BeautifulSoup
+
+from Exceptions import FailedLoginException
 from Browser import Browser
 from UrlEncodedForm import UrlEncodedForm
 from HttpServerMessage import HTTP_STATUS
-from urllib.parse import urlparse
+
+
+__author__ = "Nick Jones"
 
 DOMAIN = ("cs5700sp15.ccs.neu.edu", 80)
 FLAG_PATTERN = re.compile("FLAG: ([a-fA-F0-9]{64})")
 LOGIN_PAGE = "/accounts/login/?next=/fakebook/"
+
+log = logging.getLogger("webcrawler")
+
 
 class Strategy:
     """
@@ -36,8 +42,15 @@ class Strategy:
                          and link.netloc in ["", DOMAIN[0]],
             links
         ))
-        links = [link.path + "?" + link.query + "#" + link.fragment for link in links]
-        return links
+        cleaned_links = []
+        for link in links:
+            link_str = link.path
+            if link.query != "":
+                link_str += "?" + link.query
+            if link.fragment != "":
+                link_str += "#" + link.fragment
+            cleaned_links.append(link_str)
+        return cleaned_links
 
     def _find_links(self, msg):
         found_links = []
@@ -90,8 +103,10 @@ class Strategy:
         First we need to log into Fakebook and find the initial frontier.
         """
         self._login(username, password)
+        log.info("Logged in with username: %s and password: %s", username, password)
 
         while len(self.frontier) is not 0 and not self._is_done():
+            log.debug("%d sites visited", len(self.frontier))
             next_resource = self.frontier.pop()
             response = self.browser.get(next_resource)
             self._parseResponse(next_resource, response)
@@ -101,14 +116,14 @@ class Strategy:
     def _add_flag(self, flag):
         result = FLAG_PATTERN.match(flag)
         if result is not None:
-            print(result.group(1))
+            log.info("Added flag %s", result.group(1))
             self.flags.add(result.group(1))
 
     def _is_done(self):
         return len(self.flags) == 5
 
     def _print_flags(self):
-        "\n".join(self.flags)
+        sys.stdout.write("\n".join(self.flags))
 
     def cleanup(self):
         """

@@ -1,9 +1,7 @@
-import re
 from CookieCache import CookieCache
 
 __author__ = "Nick Jones"
 
-COOKIE_PATTERN = re.compile("")
 
 class BrowserState:
     """
@@ -11,6 +9,7 @@ class BrowserState:
     Information received from the server, gets stored here and pulled when
     new messages get created.
     """
+
     def __init__(self):
         self.history = set()
         self.cookies = CookieCache()

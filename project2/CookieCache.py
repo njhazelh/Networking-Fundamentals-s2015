@@ -1,8 +1,11 @@
 import re
+import logging
 
 __author__ = 'njhazelh'
 
 COOKIE_PATTERN = re.compile("(.*?)=(.*?);")
+
+log = logging.getLogger("webcrawler")
 
 
 class CookieCache:
@@ -17,6 +20,7 @@ class CookieCache:
         match = COOKIE_PATTERN.search(cookie_str)
         if match:
             cookie = Cookie(match.group(1), match.group(2))
+            log.info("Setting cookie: %s to %s", match.group(1), match.group(2))
             self.add_cookie(cookie)
 
     def add_cookie(self, cookie):

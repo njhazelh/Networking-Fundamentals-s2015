@@ -6,6 +6,9 @@ from HttpSocket import HttpSocket
 from BrowserState import BrowserState
 from HttpClientMessage import HttpClientMessage
 from HttpServerMessage import HttpServerMessage
+import logging
+
+log = logging.getLogger("webcrawler")
 
 
 class Browser:
@@ -30,6 +33,7 @@ class Browser:
         """
         self.domain = domain
         self.socket.lock_domain(domain)
+        log.info("Locked the domain to %s", domain)
 
     def unlock_domain(self):
         """
@@ -37,6 +41,7 @@ class Browser:
         """
         self.domain = None
         self.socket.unlock_domain()
+        log.info("Unlocked the domain")
 
     def request(self, method, file, body=None, headers=None, dest=None):
         """
@@ -52,18 +57,21 @@ class Browser:
         elif self.domain is not None:
             dest = self.domain
         elif dest is None and self.domain is None:
+            log.warn("Missing destination for request")
             raise NoDestinationException()
 
         self.response = None
         message = HttpClientMessage(method, file, body, headers)
         self.state.apply_to(message)
         self.state.visit(file)
+        log.debug("sending %s for %s", method, file)
 
         while True:
             self.socket.send(dest, message)
             try:
                 return self.get_response()
             except EmptySocketException:
+                log.warn("Encountered an empty socket")
                 continue
 
     def get(self, file, headers={}, dest=None):
