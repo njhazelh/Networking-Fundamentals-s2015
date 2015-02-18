@@ -1,5 +1,5 @@
 #Networking Fundamentals Project 2
-####Nick Jones, Michelle Sun
+####Nick Jones, Michelle Suk
 
 ##Overview
 This project is a simple webcrawler that uses HTTP to find a series of
