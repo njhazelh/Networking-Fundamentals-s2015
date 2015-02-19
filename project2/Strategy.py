@@ -29,7 +29,7 @@ class Strategy:
     """
 
     def __init__(self):
-        self.frontier = []
+        self.frontier = set()
         self.browser = Browser()
         self.browser.lock_domain(DOMAIN)
         self.flags = set()
@@ -73,13 +73,13 @@ class Strategy:
             links = self._find_links(msg)
             for link in links:
                 if link not in self.frontier and not self.browser.has_visited(link):
-                    self.frontier.append(link)
-        elif msg.status_code == HTTP_STATUS.MOVED_PERM:
-            self.frontier.append(msg.get_header("location"))
-        elif msg.status_code == HTTP_STATUS.FOUND:
-            self.frontier.append(msg.get_header("location"))
+                    self.frontier.add(link)
+        elif msg.status_code == HTTP_STATUS.MOVED_PERM or msg.status_code == HTTP_STATUS.FOUND:
+            location = msg.get_header("location")
+            if location not in self.frontier and not self.browser.has_visited(location):
+                self.frontier.add(msg.get_header("location"))
         elif msg.status_code == HTTP_STATUS.SERVER_ERROR:
-            self.frontier.append(resource)
+            self.frontier.add(resource)
 
 
     def _login(self, username, password):
@@ -123,8 +123,8 @@ class Strategy:
         return len(self.flags) == 5
 
     def _print_flags(self):
-        sys.stdout.write("\n".join(self.flags))
         sys.stdout.flush()
+        sys.stdout.write("\n".join(self.flags))
 
     def cleanup(self):
         """

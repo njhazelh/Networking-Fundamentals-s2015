@@ -6,8 +6,8 @@ clean:
 	rm -f *.pyc
 
 run:
-	./webcrawler -v DEBUG 001111718 7R63P2NO
-	./webcrawler -v DEBUG 001160850 CO5NFWNB
+	./webcrawler -v INFO 001111718 7R63P2NO
+	./webcrawler -v INFO 001160850 CO5NFWNB
 
 test:
 	python3 -m unittest discover
