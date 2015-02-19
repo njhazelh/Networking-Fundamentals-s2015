@@ -45,22 +45,18 @@ class Strategy:
         cleaned_links = []
         for link in links:
             link_str = link.path
-            if link.query != "":
-                link_str += "?" + link.query
-            if link.fragment != "":
-                link_str += "#" + link.fragment
+            if link.query != "": link_str += "?" + link.query
+            if link.fragment != "": link_str += "#" + link.fragment
             cleaned_links.append(link_str)
         return cleaned_links
 
-    def _find_links(self, msg):
-        found_links = []
-        soup = BeautifulSoup(msg.body)
+    def _find_links(self, soup):
+        found_links = set()
         for a in soup.find_all('a', href=True):
-            found_links.append(a['href'])
+            found_links.add(a['href'])
         return self._clean_and_filter_links(found_links)
 
-    def _find_flags(self, msg):
-        soup = BeautifulSoup(msg.body)
+    def _find_flags(self, soup):
         for a in soup.find_all('h2', attrs={"class":"secret_flag"}):
             self._add_flag(a.string)
 
@@ -69,8 +65,9 @@ class Strategy:
         Find all links in the body and add them to the frontier if they're not already there or visited
         """
         if msg.status_code == HTTP_STATUS.OK:
-            self._find_flags(msg)
-            links = self._find_links(msg)
+            msg_body = BeautifulSoup(msg.body)
+            self._find_flags(msg_body)
+            links = self._find_links(msg_body)
             for link in links:
                 if link not in self.frontier and not self.browser.has_visited(link):
                     self.frontier.add(link)
