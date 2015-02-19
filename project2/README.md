@@ -40,6 +40,9 @@ This will run the code with INFO level verbosity
 for both partners.
 To run run `./webcrawler [username] [password]`
 
+`make run` will run both partners code with
+an INFO level verbosity.
+
 ##Testing
 To test, run `make test`
 
