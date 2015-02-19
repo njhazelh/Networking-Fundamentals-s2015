@@ -17,6 +17,7 @@ log = logging.getLogger("webcrawler")
 def main(args):
     """
     Create and run the strategy
+    :param args: Command line arguments containing args parsed by argparse
     """
     log.info("Starting webcrawler with %s %s", args.username, args.password)
     start = time.time()

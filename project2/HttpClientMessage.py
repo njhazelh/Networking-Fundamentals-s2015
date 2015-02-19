@@ -3,10 +3,7 @@ __author__ = "Nick Jones"
 
 class HttpClientMessage:
     """
-    This class contains the HTTP/1.1 protocol.  To create a method, use the
-    static create method, which will create an instance of the message to send.
-    To obtain a message object from a string obtained from the server, use
-    the parse method.
+    This represents a HTTP/1.1 message from a client to a server.
     """
 
     DEFAULT_VERSION = "HTTP/1.1"
@@ -16,6 +13,15 @@ class HttpClientMessage:
     }
 
     def __init__(self, method, resource, body, headers):
+        """
+        Create this message
+        The content-length header is set automatically to match the body size.
+        :param method: The HTTP method to use.
+        :param resource: The resource name to get
+        :param body: The body of the message if the message is a POST or PUT
+        :param headers: The headers for the message.
+        :return:
+        """
         self.method = method
         self.resource = resource
         if body is None:
@@ -31,6 +37,9 @@ class HttpClientMessage:
         self.version = HttpClientMessage.DEFAULT_VERSION
 
     def __str__(self):
+        """
+        :return: The String representation of this message to send to the server.
+        """
         status = "{} {} {}".format(self.method, self.resource, self.version)
 
         headers = []

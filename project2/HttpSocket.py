@@ -21,7 +21,11 @@ class HttpSocket:
 
     def send(self, dest, msg):
         """
-        Send the message somehow.
+        Send the message to the server.
+        If the socket does not have a connection to the server, make one.
+        If sending the message to the server fails, repeat until it works.
+        :param dest: The destination server domain name or ip
+        :param msg: A HttpClientMessage to send to the server.
         """
         if self.dest is None or self.dest != dest or self.socket is None:
             self.connect(dest)
@@ -35,6 +39,12 @@ class HttpSocket:
 
 
     def connect(self, dest):
+        """
+        Connect to dest.  Close previous connection if existing.
+        :param dest: The destination to open the socket to.
+        :except: LockedDomainException if the domain has been locked to something
+                 other than dest.
+        """
         if self.locked and self.locked_domain != dest:
             raise LockedDomainException(dest)
         else:
@@ -44,18 +54,32 @@ class HttpSocket:
             self.dest = dest
 
     def close(self):
+        """
+        Close the socket and set it to None
+        """
         if self.socket is not None:
             self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
             self.socket = None
 
     def lock_domain(self, domain):
+        """
+        Lock the domains that this can connect to to "domain"
+        :param domain: The only domain that this socket will connect to.
+        """
         self.locked = True
         self.locked_domain = domain
 
     def unlock_domain(self):
+        """
+        Unlock the domain.
+        """
         self.locked = False
         self.locked_domain = None
 
     def get_socket(self):
+        """
+        Get the internal socket. This is kinda a hack, but it works well enough for the moment.
+        :return: The internal socket.
+        """
         return self.socket

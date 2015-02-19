@@ -9,6 +9,9 @@ log = logging.getLogger("webcrawler")
 
 
 class HTTP_STATUS:
+    """
+    This is basically an enum representing HTTP_STATUS codes from the server.
+    """
     OK = 200
     MOVED_PERM = 301
     FOUND = 302
@@ -18,7 +21,16 @@ class HTTP_STATUS:
 
 
 class HttpServerMessage:
+    """
+    This is a model that encapsulates the parsing of messages from an HTTP server.
+    """
+
     def __init__(self, sock):
+        """
+        Initialize this message and read the data from the network.
+        This should probably be refactored somehow.
+        :param sock: The socket to read this message from.
+        """
         self.version = ""
         self.headers = {}
         self.body = ""
@@ -42,6 +54,11 @@ class HttpServerMessage:
         file.close()
 
     def _read_status(self, file):
+        """
+        Read the status line from the message and set version, status_code, and reason.
+        :param file: The file descriptor for the socket to read from.
+        :except: BadStatusException The status line is malformed somehow.
+        """
         status = file.readline().decode("utf-8")
 
         if not status:
@@ -55,6 +72,12 @@ class HttpServerMessage:
             raise BadStatusException(status)
 
     def _read_headers(self, file):
+        """
+        Read the headers for this message.
+        :param file: The file for the socket to read from.
+        :except EmptySocketException: The socket has closed.
+        :except BadHeaderException: A header is malformed somehow.
+        """
         key = ""
         while True:
             line = file.readline()
@@ -81,6 +104,11 @@ class HttpServerMessage:
 
 
     def _add_header(self, key, value):
+        """
+        Add a header to this model.  Combine with commas if key already exists.
+        :param key: The header key
+        :param value: The header value
+        """
         key = key.lower()
 
         if key == "set-cookie":
@@ -94,6 +122,12 @@ class HttpServerMessage:
             self.headers[key] = value
 
     def _read_body(self, size, file):
+        """
+        Read the body of the message. This should be done if the message
+        has a body and the transfer-encoding header is not "chunked".
+        :param size: The size of the body in bytes
+        :param file: The file to read the body from.
+        """
         data = ""
         while size > 0:
             new_data = file.read(size)
@@ -105,6 +139,11 @@ class HttpServerMessage:
         self.body = data
 
     def _read_chunked(self, file):
+        """
+        Read a chunked body.  This should be called when the transfer-encoding of the
+        message is "chunked"
+        :param file: The file to read this from.
+        """
         log.debug("Reading a chunked message")
         body = ""
         while True:
@@ -130,18 +169,35 @@ class HttpServerMessage:
 
 
     def get_header(self, key):
+        """
+        Get a single header from this message
+        :param key: The key for the header. Should be lower-case.
+        :return: The value of this header
+        :except: MissingHeaderException if the header does not exist.
+        """
         try:
             return self.headers[key]
         except KeyError:
             raise MissingHeaderException(key)
 
     def safe_get_header(self, key):
+        """
+        Get a header or return an empty string if it does not exist.
+        :param key: The key of the header to get.  Should be lower-case
+        :return: The header value or ""
+        """
         if key in self.headers.keys():
             return self.get_header(key)
         else:
             return ""
 
     def __str__(self):
+        """
+        Convert this message back to a string.
+        :return: A String representing this message.  It should almost match what was received,
+        but the header keys will be lower case and headers with the same key will be combined
+        into a comma separated list.
+        """
         status = "{} {} {}".format(self.version, self.status_code, self.reason)
         headers = "\r\n".join(["{}: {}".format(key, self.headers[key]) for key in self.headers])
         return "\r\n".join([status, headers, "", self.body])

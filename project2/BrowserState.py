@@ -11,6 +11,7 @@ class BrowserState:
     """
 
     def __init__(self):
+        """Initialize"""
         self.history = set()
         self.cookies = CookieCache()
 
@@ -33,10 +34,24 @@ class BrowserState:
             self.cookies.add_cookie(cookie)
 
     def get_cookie(self, key):
+        """
+        Get a single cookie
+        :param key: The key of the cookie
+        :return: The cookie object.
+        """
         return self.cookies.get_cookie(key)
 
     def visit(self, file):
+        """
+        Add another file to the history.
+        :param file: The file toadd
+        """
         self.history.add(file)
 
     def has_visited(self, file):
+        """
+        Have we visited file before?
+        :param file: The file to check
+        :return: True iff we have visited it before
+        """
         return file in self.history

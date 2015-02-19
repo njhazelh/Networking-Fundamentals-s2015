@@ -20,7 +20,6 @@ class Browser:
     def __init__(self):
         """
         Set up the sockets
-        :return:
         """
         self.socket = HttpSocket()
         self.state = BrowserState()
@@ -47,10 +46,11 @@ class Browser:
         """
         A generic method for making HTTP requests to a server.
         :param method: The HTTP Method
-        :param file:
-        :param body:
-        :param headers:
-        :return:
+        :param file: The name of the file to request
+        :param body: The body of the request
+        :param headers: The headers of the message
+        :param dest: The destination of the message
+        :return: The response from the server.
         """
         if self.domain is not None and dest is not None and dest != self.domain:
             raise LockedDomainException(dest)
@@ -75,15 +75,30 @@ class Browser:
                 continue
 
     def get(self, file, headers={}, dest=None):
+        """
+        Send a GET request to the server
+        :param file: The file to GET
+        :param headers: The headers for the message
+        :param dest: The destination of the message
+        :return: The response from the server
+        """
         return self.request("GET", file, None, headers, dest)
 
     def post(self, file, body=None, headers={}, dest=None):
+        """
+        Send a POST request to the server
+        :param file: The resource to POST to
+        :param body: The body of the message
+        :param headers: The headers of the message
+        :param dest: The destination of the message
+        :return: The response from the server
+        """
         return self.request("POST", file, body, headers, dest)
 
     def get_response(self):
         """
         Get the response from the previous message.
-        :return:
+        :return: Get the response from the server.
         """
         if self.response is None:
             self.response = HttpServerMessage(self.socket)
@@ -92,14 +107,31 @@ class Browser:
         return self.response
 
     def apply_response(self, response):
+        """
+        Apply the response from the server to the browser.
+        :param response: The response from the server
+        """
         if response.safe_get_header("connection") == "close":
             self.socket.close()
 
     def get_cookie(self, key):
+        """
+        Get a cookie from the BrowserState
+        :param key: The key of the cookie
+        :return: The cookie under that key
+        """
         return self.state.get_cookie(key)
 
     def has_visited(self, link):
+        """
+        Have we visited link before?
+        :param link: The link to check
+        :return: True iff we have visited the link
+        """
         return self.state.has_visited(link)
 
     def close(self):
+        """
+        Close the browser connections
+        """
         self.socket.close()
