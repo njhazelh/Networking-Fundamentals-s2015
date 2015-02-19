@@ -61,7 +61,7 @@ class Strategy:
 
     def _find_flags(self, msg):
         soup = BeautifulSoup(msg.body)
-        for a in soup.find_all('h2', class_="secret_flag"):
+        for a in soup.find_all('h2', attrs={"class":"secret_flag"}):
             self._add_flag(a.string)
 
     def _parseResponse(self, resource, msg):
@@ -127,8 +127,7 @@ class Strategy:
 
     def _print_flags(self):
         log.info("Found %s flags:", len(self.flags))
-        sys.stdout.flush()
-        sys.stdout.write("\n".join(self.flags))
+        print("\n".join(self.flags))
 
     def cleanup(self):
         """
