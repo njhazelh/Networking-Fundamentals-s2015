@@ -111,6 +111,9 @@ class Strategy:
             response = self.browser.get(next_resource)
             self._parseResponse(next_resource, response)
 
+        if len(self.frontier) is 0:
+            log.warn("Crawler emptied the frontier")
+
         self.cleanup()
 
     def _add_flag(self, flag):
@@ -123,6 +126,7 @@ class Strategy:
         return len(self.flags) == 5
 
     def _print_flags(self):
+        log.info("Found %s flags:", len(self.flags))
         sys.stdout.flush()
         sys.stdout.write("\n".join(self.flags))
 
