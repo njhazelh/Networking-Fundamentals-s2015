@@ -43,6 +43,7 @@ properties will be within the following ranges.
 ### Experiments
 #### Experiment 1: TCP Performance Under Congestion
 Variables: Buffer size, start time
+
 Iterations: N
 
 1. For each TCP in Tahoe, Reno, NewReno, Vegas:
@@ -57,6 +58,7 @@ Iterations: N
 
 #### Experiment 2: Fairness Between TCP Variants
 Variables: start time, buffer sizes
+
 Iterations: N
 
 1. For each __TCPa__, __TCPb__ in Reno/Reno, NewReno/Reno, Vegas/Vegas, NewReno/Vegas:
@@ -68,6 +70,7 @@ Iterations: N
 
 #### Experiment 3: Influence of Queuing
 Variables: start time, CBR flow
+
 Iterations: N
 
 1. For __TCP__ in Reno, SACK:
