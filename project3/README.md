@@ -59,27 +59,27 @@ Iterations: N
 Variables: start time, buffer sizes
 Iterations: N
 
-1. For each _TCPa_, _TCPb_ in Reno/Reno, NewReno/Reno, Vegas/Vegas, NewReno/Vegas:
-    2. For N tests with latency as _L_ and buffer-sizes as _B_:
+1. For each __TCPa__, __TCPb__ in Reno/Reno, NewReno/Reno, Vegas/Vegas, NewReno/Vegas:
+    2. For N tests with latency as __L__ and buffer-sizes as __B__:
         3. Add a CBR flow from N2 -> N3 with bandwidth of 1 Mbps.
-        4. Add a _TCPa_ flow from N1 -> N4.
-        5. Add a _TCPb_ flow from N5 -> N6.
+        4. Add a __TCPa__ flow from N1 -> N4.
+        5. Add a __TCPb__ flow from N5 -> N6.
         6. Measure throughput, drop-rate, latency.
 
 #### Experiment 3: Influence of Queuing
 Variables: start time, CBR flow
 Iterations: N
 
-1. For _TCP_ in Reno, SACK:
-    2. For _Algo_ in DropTail, RandomEarlyDrop:
-        3. For _N_ tests with start time as _S_ and CBR flow as _F_:
-          4. Add a CBR flow from N5 -> N6 with bandwidth of _F_ Mbps.
-          5. Add a TCP flow from N1 -> N4 using _Algo_.
-          6. Start _TCP_.
-          7. Start CBR at time _S_ after start of TCP flow.
+1. For __TCP__ in Reno, SACK:
+    2. For __Algo__ in DropTail, RandomEarlyDrop:
+        3. For __N__ tests with start time as __S__ and CBR flow as __F__:
+          4. Add a CBR flow from N5 -> N6 with bandwidth of __F__ Mbps.
+          5. Add a TCP flow from N1 -> N4 using __Algo__.
+          6. Start __TCP__.
+          7. Start CBR at time __S__ after start of TCP flow.
           8. Measure throughput, drop-rate, latency.
 
 ### Analysis
 #### Tools
 We plan to use Python to interpret the data and a Python plotting library
-such as (Plotly)[https://plot.ly/feed/] to plot the data.
+such as [Plotly](https://plot.ly/feed/) to plot the data.
