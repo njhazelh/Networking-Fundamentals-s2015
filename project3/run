@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function expr1 {
+    FILE=results/experiment2/experiment1-results.csv
+
+    echo "COLUMN HEADER NAMES GO HERE" > $FILE
+
+    # run python script
+}
+
+function expr2 {
+    FILE=results/experiment2/experiment2-results.csv
+    ITERATIONS=100
+
+    echo "TCP1, TCP2, Time, CBR Bandwidth, TCP1 Bandwidth, TCP2 Bandwidth, TCP1 Loss Rate, TCP2 Loss Rate, TCP1 Latency, TCP2 Latency" > $FILE
+
+    for combo in 0 1 2 3
+    do
+        for (( cbr=0; cbr<10; cbr++ ))
+        do
+            for (( i=0; i < $ITERATIONS; i++ ))
+            do
+                ns experiment2.tcl $combo $cbr &
+            done
+        done
+    done >> $FILE
+
+    # run python script
+}
+
+function expr3 {
+    FILE=results/experiment2/experiment3-results.csv
+
+    echo "COLUMN HEADER NAMES GO HERE" > $FILE
+
+
+    # run python script
+}
+
+# Should have command line args to run specific tests X times
+expr2
