@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function expr1 {
-    FILE=results/experiment2/experiment1-results.csv
+    FILE=results/experiment3/experiment3-results.csv
 
     echo "COLUMN HEADER NAMES GO HERE" > $FILE
 
@@ -29,7 +29,7 @@ function expr2 {
 }
 
 function expr3 {
-    FILE=results/experiment2/experiment3-results.csv
+    FILE=results/experiment3/experiment3-results.csv
 
     echo "COLUMN HEADER NAMES GO HERE" > $FILE
 
