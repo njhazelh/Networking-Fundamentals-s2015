@@ -4,8 +4,10 @@ import re
 
 
 class TraceLine:
+    MATTERS = re.compile(
+        "^d .* tcp|^r (?:\S+ ){2}(?P<to>\S+) (?:tcp|ack) (?:\S+ ){4}(?P=to)\.|^\- .*? (?P<from>\S+) \d+ tcp .*? (?P=from)\.")
     LINE_REGEX = re.compile(
-        "([\+\-rd]) (\d*\.\d*|\d*) (\d*) (\d*) (tcp|ack|cbr) (\d*) .*? (\d*) (\d)*\.\d* (\d*)\.\d* (\d*) (\d*)")
+        "([\-rd]) (\d+\.\d+|\d+) (\d+) (\d+) (tcp|ack) (\d+) .{7} (\d+) (\d+)\.\d+ (\d+)\.\d+ (\d+) (\d+)")
 
     def __init__(self, event, time, frm, to, type, size, flow, src, dest, seq, id):
         self.event = event
@@ -26,6 +28,10 @@ class TraceLine:
 
     @classmethod
     def fromLine(cls, line):
+        matters = TraceLine.MATTERS.match(line)
+        if matters is None:
+            return None
+
         match = TraceLine.match(line)
         if match is not None:
             return cls(match.group(1),
@@ -38,13 +44,13 @@ class TraceLine:
                        match.group(8),
                        match.group(9),
                        match.group(10),
-                       match.group(10))
+                       match.group(11))
         else:
             return None
 
 
     def __str__(self):
-        string = "{event} {time} {from} {to} {type} {size} {src} {dest} {seq} {id}"
+        string = "{event} {time} {frm} {to} {type} {size} {src} {dest} {seq} {id}"
         return string.format(event=self.event,
                              time=self.time,
                              frm=self.frm,

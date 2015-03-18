@@ -16,15 +16,11 @@ set cbr_bw [lindex $argv 2]
 
 set ns [new Simulator]
 
-#set namFile [open "test-nam.nam" w]
-#$ns namtrace-all $namFile
-
 $ns trace-all stdout
 
 proc finish {} {
     global ns
     $ns flush-trace
-    #close $namFile
     exit 0
 }
 
