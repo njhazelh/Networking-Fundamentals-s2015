@@ -12,19 +12,21 @@
 
 source lib.tcl
 
-set VARIANT_COMBOS {{0 0} {1 0} {2 2} {1 2}}
-
-set id [lindex 0]
-set combo [lindex 1]
-set cbr_bw [lindex 2]
+set tcp1_id [lindex $argv 0]
+set tcp2_id [lindex $argv 1]
+set cbr_bw [lindex $argv 2]
 
 set ns [new Simulator]
+
+#set namFile [open "test-nam.nam" w]
+#$ns namtrace-all $namFile
 
 $ns trace-all stdout
 
 proc finish {} {
     global ns
     $ns flush-trace
+    #close $namFile
     exit 0
 }
 
@@ -51,8 +53,8 @@ $ns duplex-link-op $n2 $n3 queuePos 0.5
 $ns duplex-link-op $n5 $n2 orient right-up
 $ns duplex-link-op $n1 $n2 orient right-down
 
-set tcp1_start [expr {10.0 * rand()}]
-set tcp2_start [expr {10.0 * rand()}]
+set tcp1_start [expr 10 * rand()]
+set tcp2_start [expr 10 * rand()]
 
 # Add CBR Flow
 set udp [new Agent/UDP]
@@ -69,7 +71,7 @@ $cbr set rate_ ${cbr_bw}Mb
 $cbr set random_ 1
 
 # Add TCP1 Flow
-set tcp1 [enum->tcp [lindex [lindex $VARIANT_COMBOS $combo] 0]]
+set tcp1 [new Agent/TCP/$tcp1_id]
 set tcp1Sink [new Agent/TCPSink]
 set ftp1 [new Application/FTP]
 $tcp1 set class_ 1
@@ -81,7 +83,7 @@ $ns connect $tcp1 $tcp1Sink
 $ftp1 attach-agent $tcp1
 
 # Add TCP2 Flow
-set tcp2 [enum->tcp [lindex [lindex $VARIANT_COMBOS $combo] 1]]
+set tcp2 [new Agent/TCP/$tcp2_id]
 set sink2 [new Agent/TCPSink]
 set ftp2 [new Application/FTP]
 $tcp2 set class_ 2
