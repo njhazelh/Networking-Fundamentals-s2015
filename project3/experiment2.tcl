@@ -10,8 +10,6 @@
 # Vegas/Vegas
 # NewReno/Vegas
 
-source lib.tcl
-
 set tcp1_id [lindex $argv 0]
 set tcp2_id [lindex $argv 1]
 set cbr_bw [lindex $argv 2]
