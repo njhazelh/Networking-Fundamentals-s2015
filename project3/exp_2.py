@@ -1,5 +1,8 @@
+__author__ = 'njhazelh'
+
 import statistics as stat
 from tools import *
+from CumulativeFlow import *
 
 class Experiment2FlowState:
     def __init__(self):
@@ -88,12 +91,13 @@ class Experiment2State(Experiment):
         self.flows.setdefault(None)
 
     def add_line(self, line):
+        if line.flow not in {1, 2}: return
         if line.type == 'tcp' or line.type == 'ack':
             flow = self.flows.get(line.flow)
             if flow:
                 flow.add_line(line)
             else:
-                flow = Experiment2FlowState()
+                flow = CumulativeFlow()
                 self.flows[line.flow] = flow
                 flow.add_line(line)
 
