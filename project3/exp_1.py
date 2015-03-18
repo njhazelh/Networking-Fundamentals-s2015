@@ -1,4 +1,3 @@
-import statistics as stat
 from tools import *
 from CumulativeFlow import *
 
@@ -20,16 +19,16 @@ def analyze(results):
     points = [x for x in zip(*results)]
     return {
             "throughput": {
-                "mean": stat.mean(points[0]),
-                "std": stat.stdev(points[0])
+                "mean": mean(points[0]),
+                "std": stdev(points[0])
             },
             "drop_rate": {
-                "mean": stat.mean(points[1]),
-                "std": stat.stdev(points[1])
+                "mean": mean(points[1]),
+                "std": stdev(points[1])
             },
             "rtt": {
-                "mean": stat.mean(points[2]),
-                "std": stat.stdev(points[2])
+                "mean": mean(points[2]),
+                "std": stdev(points[2])
             }
         }
 

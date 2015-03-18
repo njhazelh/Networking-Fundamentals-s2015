@@ -118,30 +118,30 @@ def analyze(results):
     return {
         1: {
             "throughput": {
-                "mean": stat.mean(points_1[0]),
-                "std": stat.stdev(points_1[0])
+                "mean": mean(points_1[0]),
+                "std": stdev(points_1[0])
             },
             "drop_rate": {
-                "mean": stat.mean(points_1[1]),
-                "std": stat.stdev(points_1[1])
+                "mean": mean(points_1[1]),
+                "std": stdev(points_1[1])
             },
             "rtt": {
-                "mean": stat.mean(points_1[2]),
-                "std": stat.stdev(points_1[2])
+                "mean": mean(points_1[2]),
+                "std": stdev(points_1[2])
             }
         },
         2: {
             "throughput": {
-                "mean": stat.mean(points_2[0]),
-                "std": stat.stdev(points_2[0])
+                "mean": mean(points_2[0]),
+                "std": stdev(points_2[0])
             },
             "drop_rate": {
-                "mean": stat.mean(points_2[1]),
-                "std": stat.stdev(points_2[1])
+                "mean": mean(points_2[1]),
+                "std": stdev(points_2[1])
             },
             "rtt": {
-                "mean": stat.mean(points_2[2]),
-                "std": stat.stdev(points_2[2])
+                "mean": mean(points_2[2]),
+                "std": stdev(points_2[2])
             }
         }
     }
