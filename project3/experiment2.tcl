@@ -20,22 +20,11 @@ set cbr_bw [lindex 2]
 
 set ns [new Simulator]
 
-set traceDir "results/experiment2/trace/${combo}_${cbr_bw}"
-exec mkdir -p $traceDir
-set traceFilter "| grep \"tcp\" >"
-set traceFile [open "$traceFilter $traceDir/${id}.tr" w]
-$ns trace-all $traceFile
-
-set namDir "results/experiment2/nam/${combo}_${cbr_bw}"
-exec mkdir -p $namDir
-set namFile [open "${namDir}/${id}.tr" w]
-$ns namtrace-all $namFile
+$ns trace-all stdout
 
 proc finish {} {
-    global ns traceFile namFile
+    global ns
     $ns flush-trace
-    close $traceFile
-    close $namFile
     exit 0
 }
 
