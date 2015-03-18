@@ -3,6 +3,11 @@ __author__ = 'njhazelh'
 import sys
 import subprocess
 
+try:
+    import statistics as stat
+except ImportError:
+    stat = None
+
 from TraceLine import *
 
 
@@ -40,3 +45,17 @@ class Experiment:
 
     def get_result(self):
         raise NotImplementedError("get_result not implemented")
+
+def mean(nums):
+    if stat:
+        return stat.mean(nums)
+    else:
+        return sum(nums) / len(nums)
+
+def stdev(nums):
+    if stat:
+        return stat.stdev(nums)
+    else:
+        length = len(nums)
+        m = mean(nums)
+        return (sum([(x - m) ** 2 for x in nums]) / length) ** .5
