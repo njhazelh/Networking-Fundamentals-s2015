@@ -1,6 +1,5 @@
 __author__ = 'njhazelh'
 
-import statistics as stat
 from tools import *
 from CumulativeFlow import *
 
