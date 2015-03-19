@@ -40,7 +40,7 @@ $ns duplex-link-op $n2 $n3 queuePos 0.5
 $ns duplex-link-op $n5 $n2 orient right-up
 $ns duplex-link-op $n1 $n2 orient right-down
 
-set cbr_start [expr 3 + 8 * rand()]
+set cbr_start [expr 1 + 5 * rand()]
 
 # Add TCP Flow
 set tcp [new Agent/TCP/$tcp_id]
@@ -67,12 +67,12 @@ $ns attach-agent $n6 $udpSink
 $ns connect $udp $udpSink
 # Configure CBR Bandwidth
 $cbr1 attach-agent $udp
-$cbr1 set rate_ 5Mb
+$cbr1 set rate_ 8Mb
 $cbr1 set random_ 1
 
 
 $ns at 0 "$cbr0 start"
 $ns at $cbr_start "$cbr1 start"
-$ns at 20 "finish"
+$ns at 10 "finish"
 
 $ns run

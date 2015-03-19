@@ -1,6 +1,7 @@
 from Exp1Analyzer import Exp1Analyzer
 from tools import *
 from CumulativeFlow import *
+import numpy as np
 
 __author__ = 'njhazelh'
 
@@ -33,10 +34,11 @@ def main():
     TCPs = ["Agent/TCP", "Agent/TCP/Reno", "Agent/TCP/Newreno", "Agent/TCP/Vegas"]
     cbr_max = 11
     done = 0
-    total = iterations * len(TCPs) * cbr_max
+    cbrs = np.arange(0, cbr_max, 0.5)
+    total = iterations * len(TCPs) * len(cbrs)
     analyzer =  Exp1Analyzer()
     for tcp in TCPs:
-        for cbr in range(0, cbr_max):
+        for cbr in cbrs:
             for i in range(0, iterations):
                 progress_bar(done, total)
                 result = run_test(["ns", "experiment1.tcl", tcp, str(cbr)], Experiment1State)

@@ -45,7 +45,7 @@ class Experiment3State(Experiment):
         return results
 
 def main():
-    iterations = 10
+    iterations = 20
     queues = ["RED", "DropTail"]
     TCPs = ["Reno", "Sack1"]
     done = 0

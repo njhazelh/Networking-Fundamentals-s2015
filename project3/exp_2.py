@@ -4,6 +4,7 @@ __author__ = 'njhazelh'
 
 from tools import *
 from CumulativeFlow import *
+import numpy as np
 
 class Experiment2State(Experiment):
     def __init__(self):
@@ -50,10 +51,11 @@ def main():
     combos = [("Reno", "Reno"), ("Newreno", "Reno"), ("Vegas", "Vegas"), ("Newreno", "Vegas")]
     cbr_max = 11
     done = 0
-    total = iterations * len(combos) * cbr_max
+    cbrs = np.arange(0, cbr_max, 0.5)
+    total = iterations * len(combos) * len(cbrs)
     analyzer = Exp2Analyzer()
     for combo in combos:
-        for cbr in range(0, cbr_max):
+        for cbr in cbrs:
             for i in range(0, iterations):
                 progress_bar(done, total)
                 result = run_test(["ns", "experiment2.tcl", combo[0], combo[1], str(cbr)], Experiment2State)

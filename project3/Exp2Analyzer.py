@@ -9,14 +9,14 @@ class Exp2Analyzer:
                      "TCP2 Throughput", "TCP1 Droprate", "TCP2 Droprate", "TCP1 RTT", "TCP2 RTT"]
 
     def __init__(self):
-        self.df = pd.DataFrame(columns=Exp2Analyzer.EXPR2_COLUMNS)
+        self.df = pd.DataFrame(columns=Exp2Analyzer.EXPR2_COLUMNS, dtype=float)
 
     def add_result(self, result):
         self.df = self.df.append([result], ignore_index=True)
 
     def run_analysis(self):
         self.df.to_csv("results/experiment2/experiment2.csv")
-        analyze(df)
+        analyze(self.df)
 
 def analyze(df):
     for name, group in df.groupby(["TCP1", "TCP2"]):
@@ -30,7 +30,7 @@ def analyze(df):
         plt.xlabel("CBR Bandwidth (Mbps)")
         means["TCP1 Throughput"].plot(label=tcp1)
         means["TCP2 Throughput"].plot(label=tcp2)
-        plt.legend()
+        plt.legend(loc=0)
         plt.savefig("results/experiment2/{tcp1}-{tcp2}_throughput.png".format(tcp1=tcp1, tcp2=tcp2))
         plt.close(1)
 
@@ -41,7 +41,7 @@ def analyze(df):
         plt.xlabel("CBR Bandwidth (Mbps)")
         means["TCP1 RTT"].apply(lambda x: x * 1000).plot(label=tcp1)
         means["TCP2 RTT"].apply(lambda x: x * 1000).plot(label=tcp2)
-        plt.legend()
+        plt.legend(loc=0)
         plt.savefig("results/experiment2/{tcp1}-{tcp2}_rtt.png".format(tcp1=tcp1, tcp2=tcp2))
         plt.close(2)
 
@@ -52,7 +52,7 @@ def analyze(df):
         plt.xlabel("CBR Bandwidth (Mbps)")
         means["TCP1 Droprate"].plot(label=tcp1)
         means["TCP2 Droprate"].plot(label=tcp2)
-        plt.legend()
+        plt.legend(loc=0)
         plt.savefig("results/experiment2/{tcp1}-{tcp2}_droprate.png".format(tcp1=tcp1, tcp2=tcp2))
         plt.close(3)
 

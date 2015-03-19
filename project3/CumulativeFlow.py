@@ -1,3 +1,5 @@
+from numpy import NaN
+
 __author__ = 'njhazelh'
 
 
@@ -58,23 +60,24 @@ class CumulativeFlow:
 
     def reset(self):
         self.num_sent = 0
-        self.start_time = None
-        self.time
+        self.start_time = self.time
         self.RTTs = []
+        self.data_received = 0
+        self.num_dropped = 0
 
     @property
     def drop_rate(self):
         if self.num_sent > 0:
             return float(self.num_dropped) / float(self.num_sent)
         else:
-            raise Exception("No packets sent")
+            return NaN
 
     @property
     def avg_rtt(self):
         if len(self.RTTs) > 0:
             return sum(self.RTTs) / len(self.RTTs)
         else:
-            return 0  # raise "No packets have completed a round trip"
+            return NaN
 
     @property
     def throughput(self):
