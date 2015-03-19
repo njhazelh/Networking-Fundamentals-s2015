@@ -32,11 +32,20 @@ class Experiment3State(Experiment):
 
     def get_result(self):
         self.save_reset_flow()
-        for x in self.results:
-
+        results = []
+        for result in self.results:
+            results.append({
+                "TCP": None,
+                "Queue": None,
+                "Time": result[0],
+                "Throughput": result[3],
+                "Droprate": result[4],
+                "RTT": result[5]
+            })
+        return results
 
 def main():
-    iterations = 10
+    iterations = 100
     queues = ["RED", "DropTail"]
     TCPs = ["Reno", "Sack1"]
     done = 0
@@ -47,10 +56,11 @@ def main():
             for i in range(0, iterations):
                 progress_bar(done, total)
                 cmd = ["ns", "experiment3.tcl", queue, tcp]
-                result = run_test(cmd, Experiment3State)
-                result["Queue"] = queue
-                result["TCP"] = "Agent/TCP/" + tcp
-                analyzer.add_result(result)
+                results = run_test(cmd, Experiment3State)
+                for result in results:
+                    result["Queue"] = queue
+                    result["TCP"] = "Agent/TCP/" + tcp
+                analyzer.add_result(results)
                 done += 1
     analyzer.run_analysis()
 
