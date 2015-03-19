@@ -56,6 +56,12 @@ class CumulativeFlow:
                 if self.was_dropped.get(packet, None) is not None:
                     del self.was_dropped[packet]
 
+    def reset(self):
+        self.num_sent = 0
+        self.start_time = None
+        self.time
+        self.RTTs = []
+
     @property
     def drop_rate(self):
         if self.num_sent > 0:
@@ -78,4 +84,4 @@ class CumulativeFlow:
             return 0.000008 * self.data_received / (self.time - self.start_time)
 
     def get_result(self):
-        return (self.throughput, self.drop_rate, self.avg_rtt)
+        return (self.start_time, self.time, self.throughput, self.drop_rate, self.avg_rtt)

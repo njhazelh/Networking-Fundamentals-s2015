@@ -1,36 +1,58 @@
-__author__ = 'njhazelh'
-
+from CumulativeFlow import CumulativeFlow
+from Exp3Analyzer import Exp3Analyzer
 from tools import *
 
+__author__ = 'njhazelh'
+
+
 class Experiment3State(Experiment):
+    INTERVAL = 0.25
+
     def __init__(self):
-        pass
+        self.interval = Experiment3State.INTERVAL
+        self.limit = Experiment3State.INTERVAL
+        self.results = []
+        self.flow = CumulativeFlow()
+
 
     def add_line(self, line):
-        pass
+        if line.time >= self.limit:
+            self.save_reset_flow()
+        self.flow.add_line(line)
+
+    def save_reset_flow(self):
+        time = self.limit
+        result = self.flow.get_result()
+        results = list(result)
+        results.insert(0, time)
+        self.results.append(results)
+        self.limit += self.interval
+        self.flow.reset()
+
 
     def get_result(self):
-        pass
+        self.save_reset_flow()
+        for x in self.results:
 
-def analyze(results):
-    return ""
 
 def main():
-    iterations = 2
+    iterations = 10
     queues = ["RED", "DropTail"]
     TCPs = ["Reno", "Sack1"]
     done = 0
     total = iterations * len(queues) * len(TCPs)
+    analyzer = Exp3Analyzer()
     for queue in queues:
         for tcp in TCPs:
-            results = []
             for i in range(0, iterations):
                 progress_bar(done, total)
                 cmd = ["ns", "experiment3.tcl", queue, tcp]
                 result = run_test(cmd, Experiment3State)
-                results.append(result)
+                result["Queue"] = queue
+                result["TCP"] = "Agent/TCP/" + tcp
+                analyzer.add_result(result)
                 done += 1
-            print(analyze(results))
+    analyzer.run_analysis()
 
 if __name__ == "__main__":
     main()

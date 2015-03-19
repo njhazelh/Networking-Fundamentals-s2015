@@ -1,3 +1,5 @@
+from Exp2Analyzer import Exp2Analyzer
+
 __author__ = 'njhazelh'
 
 from tools import *
@@ -22,67 +24,45 @@ class Experiment2State(Experiment):
     def get_result(self):
         flow1 = self.flows.get(1, None)
         flow2 = self.flows.get(2, None)
-        if flow1 and flow2:
-            return (flow1.get_result(), flow2.get_result())
-        else:
+        if flow1 is None or flow2 is None:
             raise Exception("Missing flows")
+        flow1 = flow1.get_result()
+        flow2 = flow2.get_result()
 
-
-def analyze(results):
-    flows = [x for x in zip(*results)]
-    points_1 = [x for x in zip(*flows[0])]
-    points_2 = [x for x in zip(*flows[1])]
-    return {
-        1: {
-            "throughput": {
-                "mean": mean(points_1[0]),
-                "std": stdev(points_1[0])
-            },
-            "drop_rate": {
-                "mean": mean(points_1[1]),
-                "std": stdev(points_1[1])
-            },
-            "rtt": {
-                "mean": mean(points_1[2]),
-                "std": stdev(points_1[2])
-            }
-        },
-        2: {
-            "throughput": {
-                "mean": mean(points_2[0]),
-                "std": stdev(points_2[0])
-            },
-            "drop_rate": {
-                "mean": mean(points_2[1]),
-                "std": stdev(points_2[1])
-            },
-            "rtt": {
-                "mean": mean(points_2[2]),
-                "std": stdev(points_2[2])
-            }
+        return {
+            "TCP1": None,
+            "TCP2": None,
+            "CBR": None,
+            "TCP1 Start": flow1[0],
+            "TCP2 Start": flow2[0],
+            "TCP1 Time": flow1[1],
+            "TCP2 Time": flow2[1],
+            "TCP1 Throughput": flow1[2],
+            "TCP2 Throughput": flow2[2],
+            "TCP1 Droprate": flow1[3],
+            "TCP2 Droprate": flow2[3],
+            "TCP1 RTT": flow1[4],
+            "TCP2 RTT": flow2[4],
         }
-    }
-
 
 def main():
-    iterations = 2
+    iterations = 10
     combos = [("Reno", "Reno"), ("Newreno", "Reno"), ("Vegas", "Vegas"), ("Newreno", "Vegas")]
     cbr_max = 11
     done = 0
     total = iterations * len(combos) * cbr_max
+    analyzer = Exp2Analyzer()
     for combo in combos:
         for cbr in range(0, cbr_max):
-            results = []
             for i in range(0, iterations):
                 progress_bar(done, total)
                 result = run_test(["ns", "experiment2.tcl", combo[0], combo[1], str(cbr)], Experiment2State)
-                results.append(result)
-                sys.stdout.write("{}\r{} {}Mbps {}: {} \n".format(CLEAR_LINE, combo, cbr, i, str(result)))
+                result["TCP1"] = combo[0]
+                result["TCP2"] = combo[1]
+                result["CBR"] = cbr
+                analyzer.add_result(result)
                 done += 1
-            print(analyze(results))
-
-    sys.stdout.write(CLEAR_LINE + "\rDONE\n")
-
+    analyzer.run_analysis()
 
 if __name__ == "__main__":
     main()

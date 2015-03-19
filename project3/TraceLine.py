@@ -4,8 +4,9 @@ import re
 
 
 class TraceLine:
-    MATTERS = re.compile(
-        "^d .* tcp|^r (?:\S+ ){2}(?P<to>\S+) (?:tcp|ack) (?:\S+ ){4}(?P=to)\.|^\- .*? (?P<from>\S+) \d+ tcp .*? (?P=from)\.")
+    MATTERS = re.compile("^d .* tcp" + # dropped packets
+                         "|^r (?:\S+ ){2}(?P<to>\S+) (?:tcp|ack) (?:\S+ ){4}(?P=to)\." + # packets at dest
+                         "|^\- .*? (?P<from>\S+) \d+ tcp .*? (?P=from)\.") # packets sent at src
     LINE_REGEX = re.compile(
         "([\-rd]) (\d+\.\d+|\d+) (\d+) (\d+) (tcp|ack) (\d+) .{7} (\d+) (\d+)\.\d+ (\d+)\.\d+ (\d+) (\d+)")
 
