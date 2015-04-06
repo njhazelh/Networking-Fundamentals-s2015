@@ -1,0 +1,36 @@
+#! /usr/bin/python3
+
+import logging
+from http.Browser import Browser
+
+logging.basicConfig(
+    format='[%(asctime)s] {%(filename)-20s:%(lineno)-3d} %(levelname)s - %(message)s',
+    datefmt = '%I:%M:%S')
+log = logging.getLogger("rawhttpget")
+
+def main(argv):
+    """
+    Get the resource from the internet.
+    :param argv: The commmand line arguments parsed into a handy map.
+    """
+    log.info("Starting to get %s", args.url)
+    browser =  Browser()
+    response = browser.get(args.url)
+    saveResponse(response)
+    browser.close()
+
+
+def saveResponse(response):
+    pass
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Basically wget")
+    parser.add_argument("url", help="The url to get.  Will use filename from resource or index.html if it's a folder")
+    parser.add_argument("--verbosity", "-v", default="CRITICAL",
+                        choices=["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+                        help="The verbosity of the output.  Defaults to CRITICAL.")
+    args =  parser.parse_args()
+    log.setLevel(args.verbosity)
+    main(args)
