@@ -43,7 +43,7 @@ class IPSocket:
 
     def connect(self, dest):
         self.recvSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
-
+        self.recvSocket.setblocking(False)
         self.sendSocket = socket.socket(type=socket.SOCK_RAW, proto=socket.IPPROTO_RAW)
         self.sendSocket.connect(dest)
 
@@ -54,16 +54,27 @@ class IPSocket:
         self.thread.start()
 
     def parse_packet(self, packet):
+        print("RECV PACKET")
         print(str(packet))
+
+        if packet.dest not in ["127.0.0.1", HOST]:
+            return
+
+        checksum = packet.checksum()
+        if checksum != packet.check:
+            print("BAD CHECKSUM: ",  checksum, packet.check)
+
+
+
 
     def loop(self):
         print("Started loop thread")
         while self.connected:
-            response = self.recvSocket.recvfrom(65535, flags=socket.MSG_DONTWAIT)
-            if socket.errno == socket.EAGAIN:
-                print("asdfasdfasdfasdfasdfasdf")
+            try:
+                response = self.recvSocket.recvfrom(65535)
+            except OSError as e:
                 continue
-            addr, bytes = response
+            bytes, addr = response
             packet = IPPacket.from_network(bytes)
             self.parse_packet(packet)
         print("Ended loop thread")
@@ -72,7 +83,7 @@ class IPSocket:
         pass
 
     def wrap_data(self, data):
-        p = IPPacket(HOST, self.dest[0], data)
+        p = IPPacket(HOST, self.dest, data)
         return p.to_bytes()
 
     def send(self, data):

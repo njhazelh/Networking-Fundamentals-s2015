@@ -9,7 +9,7 @@ def packet_id_gen():
     while True:
         yield current
         current += 1
-        current & 0xFF
+        current = current & 0xFFFF
 
 
 packet_ids = packet_id_gen()
@@ -38,16 +38,12 @@ class IPPacket:
         self.options = None  # ?? words
         self.data = data  # ?? bytes
 
-        if generate:
-            self.set_checksum()
-        else:
-            self.check = None
-
         self.total_length = len(self)
 
     @classmethod
     def from_network(cls, bytes):
         if len(bytes) < 20:
+            print("Not enough bytes")
             return None
 
         header = struct.unpack("!BBHHHBBH4s4s", bytes[:20])
@@ -58,7 +54,9 @@ class IPPacket:
         result.tos = header[1]
         result.total_length = header[2]
 
-        if result.total_length != len(bytes): return None
+        if result.total_length != len(bytes):
+            print("Length field doesn't match length")
+            return None
 
         result.id = header[3]
         flags_fragOffset = header[4]
@@ -100,15 +98,21 @@ class IPPacket:
         return header
 
     def set_checksum(self):
-        check = 0
-        i = 0
-        header = self.header
-        while i < self.headerLen * 4:
-            combo = ((header[i] << 8) + header[i + 1])
-            check += (combo & 0xFFFF) + (combo >> 16)
-            i += 2
+        check = self.checksum()
         self.check = check
         return check
+
+    def checksum(self):
+        temp_check = self.check
+        self.check = 0
+        sum = 0
+        header = self.header
+        self.check = temp_check
+        for count in range(0, self.headerLen * 4, 2):
+            val = header[count: count+2]
+            sum += int.from_bytes(val, 'big')
+            sum = (sum & 0xFFFF) + (sum >> 16)
+        return sum
 
     def to_bytes(self):
         return self.header + self.data
@@ -127,7 +131,7 @@ class IPPacket:
                   ("Src", self.src),
                   ("Dest", self.dest),
                   ("Options", self.options),
-                  ("Data", self.data)]
+                  ("Data", self.data.decode())]
         string = ""
         for label, val in labels:
             string += label + ": " + str(val) + "\n"
