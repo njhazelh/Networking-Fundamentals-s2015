@@ -1,11 +1,15 @@
 import re
 import threading
-from ip.IPPacket import IPPacket
+from ip.IPPacket import IPPacket, checksum
 
 __author__ = 'njhazelh'
 
 import socket
 import fcntl, struct
+import logging
+import queue
+
+log = logging.getLogger("ip")
 
 def get_ip(ifname='eth0'):
     """
@@ -29,12 +33,13 @@ HOST = get_ip()
 
 class IPSocket:
     def __init__(self):
-        self.destIP = None
         self.connected = False
         self.sendSocket = None
         self.recvSocket = None
-        self.bytes = None
+        self.complete_packets = None
+        self.partial_packets = None
         self.thread = None
+        self.dest = None
 
     def close(self):
         self.recvSocket.close()
@@ -48,27 +53,47 @@ class IPSocket:
         self.sendSocket.connect(dest)
 
         self.dest = socket.gethostbyname(dest[0])
+        self.complete_packets = queue.Queue()
+        self.partial_packets = {}
+        self.partially_recvd_packet = None
 
         self.connected = True
         self.thread = threading.Thread(name="ip-loop", target=self.loop)
         self.thread.start()
 
     def parse_packet(self, packet):
-        print("RECV PACKET")
-        print(str(packet))
-
-        if packet.dest not in ["127.0.0.1", HOST]:
+        if packet.dest not in ["127.0.0.1", HOST] or packet.src != self.dest:
             return
 
-        checksum = packet.checksum()
-        if checksum != packet.check:
-            print("BAD CHECKSUM: ",  checksum, packet.check)
+        print(str(packet))
+        check = packet.checksum()
+        if check != 0:
+            log.warn("BAD CHECKSUM: %d vs. %s",  check, packet.check)
 
+        if packet.fragmentOffset == 0 and packet.flag_more_fragments == 0:
+            print("Adding packet to complete queue")
+            self.complete_packets.put(packet.data)
+        elif packet.flag_more_fragments == 1 and packet.id not in self.partial_packets:
+            print("Creating new partial queue for ", packet.id)
+            q = queue.PriorityQueue()
+            q.put((packet.fragmentOffset, packet))
+            self.partial_packets[packet.id] = q
+        else:
+            print("Adding packet to partial queue for ", packet.id)
+            self.partial_packets[packet.id].put((packet.fragmentOffset, packet))
+            self.check_packet_is_complete(packet.id)
 
+    def check_packet_is_complete(self, id):
+        if id not in self.partial_packets:
+            print(id, "not in partial packets")
+            return
+
+        q = self.partial_packets[id].copy()
+        print(q)
 
 
     def loop(self):
-        print("Started loop thread")
+        log.debug("Started loop thread")
         while self.connected:
             try:
                 response = self.recvSocket.recvfrom(65535)
@@ -77,10 +102,22 @@ class IPSocket:
             bytes, addr = response
             packet = IPPacket.from_network(bytes)
             self.parse_packet(packet)
-        print("Ended loop thread")
+        log.debug("Ended loop thread")
 
-    def recv(self, max):
-        pass
+    def recv(self, max=None):
+        if self.partially_recvd_packet is None:
+            packet = self.complete_packets.get()
+        else:
+            packet = self.partially_recvd_packet
+
+        if max is None or len(packet) <= max:
+            recvd = packet
+            self.partially_recvd_packet = None
+        else:
+            recvd = packet[:max]
+            self.partially_recvd_packet = packet[max:]
+
+        return recvd
 
     def wrap_data(self, data):
         p = IPPacket(HOST, self.dest, data)
