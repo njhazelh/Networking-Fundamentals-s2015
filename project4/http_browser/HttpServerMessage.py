@@ -1,9 +1,10 @@
-from http.CookieCache import CookieCache
+import logging
+
+from http_browser.CookieCache import CookieCache
+from http_browser.Exceptions import BadHeaderException, BadStatusException, EmptySocketException, MissingHeaderException
+
 
 __author__ = 'njhazelh'
-
-from http.Exceptions import BadHeaderException, BadStatusException, EmptySocketException, MissingHeaderException
-import logging
 
 log = logging.getLogger("http")
 
@@ -31,12 +32,14 @@ class HttpServerMessage:
         This should probably be refactored somehow.
         :param sock: The socket to read this message from.
         """
+        self.data = b""
         self.version = ""
         self.headers = {}
-        self.body = ""
+        self.body = b""
         self.status_code = None
         self.cookies = CookieCache()
         self._getMessage(sock)
+
 
     def _getMessage(self, sock):
         """
@@ -59,7 +62,9 @@ class HttpServerMessage:
         :param file: The file descriptor for the socket to read from.
         :except: BadStatusException The status line is malformed somehow.
         """
-        status = file.readline().decode("utf-8")
+        status = file.readline()
+        self.data += status
+        status = status.decode()
 
         if not status:
             raise EmptySocketException()
@@ -81,11 +86,12 @@ class HttpServerMessage:
         key = ""
         while True:
             line = file.readline()
+            self.data += line
 
             if line is None:
                 raise EmptySocketException()
 
-            line = line.decode("utf-8")
+            line = line.decode()
 
             if ":" not in line:
                 break
@@ -128,15 +134,16 @@ class HttpServerMessage:
         :param size: The size of the body in bytes
         :param file: The file to read the body from.
         """
-        data = ""
+        data = b""
         while size > 0:
             new_data = file.read(size)
             if new_data is None:
                 raise EmptySocketException()
-            new_data = new_data.decode("utf-8")
+            new_data = new_data
             size -= len(new_data)
             data += new_data
         self.body = data
+        self.data += data
 
     def _read_chunked(self, file):
         """
@@ -145,7 +152,7 @@ class HttpServerMessage:
         :param file: The file to read this from.
         """
         log.debug("Reading a chunked message")
-        body = ""
+        body = b""
         while True:
             size_line = file.readline()
             if size_line is None:
@@ -154,12 +161,12 @@ class HttpServerMessage:
             size = int(size_line, 16)
             if size == 0:
                 break
-            data = ""
+            data = b""
             while size > 0:
                 new_data = file.read(size)
                 if new_data is None:
                     raise EmptySocketException()
-                new_data = new_data.decode("utf-8")
+                new_data = new_data
                 size -= len(new_data)
                 data += new_data
             body += data
@@ -178,7 +185,7 @@ class HttpServerMessage:
         try:
             return self.headers[key]
         except KeyError:
-            raise MissingHeaderException(key)
+            raise MissingHeaderException(key, self.data)
 
     def safe_get_header(self, key):
         """

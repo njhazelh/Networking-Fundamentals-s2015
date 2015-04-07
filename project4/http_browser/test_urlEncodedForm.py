@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from http.UrlEncodedForm import UrlEncodedForm
+from http_browser.UrlEncodedForm import UrlEncodedForm
 
 
 __author__ = 'njhazelh'

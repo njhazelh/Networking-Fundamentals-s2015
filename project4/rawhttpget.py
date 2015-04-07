@@ -2,15 +2,18 @@
 
 import logging
 import sys
-from http.Browser import Browser
 from urllib.parse import urlparse
-from http.HttpServerMessage import HTTP_STATUS
 import socket
+
+from http_browser.Browser import Browser
+from http_browser.HttpServerMessage import HTTP_STATUS
+
 
 logging.basicConfig(
     format='[%(asctime)s] {%(filename)-20s:%(lineno)-3d} %(levelname)s - %(message)s',
-    datefmt = '%I:%M:%S')
+    datefmt='%I:%M:%S')
 log = logging.getLogger("rawhttpget")
+
 
 def main(argv):
     """
@@ -18,18 +21,21 @@ def main(argv):
     :param argv: The commmand line arguments parsed into a handy map.
     """
     log.info("Starting to get %s", args.url)
-    filename = parse_input(args.url)
-    browser =  Browser()
-    response = browser.get(args.url)
+    dest, path, filename = parse_input(args.url)
+    browser = Browser()
+    response = browser.get(path, dest=dest)
     saveResponse(response, filename)
     browser.close()
 
+
 def parse_input(url):
+    if not url.startswith('http'):
+        url = '%s%s' % ('http://', url)
     parsed = urlparse(url)
 
     # validate url
     if parsed.netloc == '':
-        print("domain name must be provided")
+        log.critical("domain name must be provided. Received %s", parsed)
         sys.exit(0)
     try:
         socket.gethostbyname(parsed.netloc)
@@ -37,29 +43,36 @@ def parse_input(url):
         print("Could not find IP address for domain name")
         sys.exit(0)
 
+    domain = parsed.netloc
+    port = 80
+    path = parsed.path
+
     # calculate filename to save result as
     if parsed.path == '' or parsed.path[-1] == "/":
         filename = "index.html"
     else:
         filename = parsed.path.split("/")[-1]
 
-    return filename
+    return (domain, port), url, filename
+
 
 def saveResponse(response, filename):
     if response.status_code != HTTP_STATUS.OK:
         log.critical("Failed to load resource. Status Code = %d", response.status_code)
     else:
         data = response.body
-        file = open(filename, 'w')
+        file = open(filename, 'wb')
         file.write(data)
+
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Basically wget")
     parser.add_argument("url", help="The url to get.  Will use filename from resource or index.html if it's a folder")
     parser.add_argument("--verbosity", "-v", default="CRITICAL",
                         choices=["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
                         help="The verbosity of the output.  Defaults to CRITICAL.")
-    args =  parser.parse_args()
+    args = parser.parse_args()
     log.setLevel(args.verbosity)
     main(args)

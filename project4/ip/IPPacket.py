@@ -1,7 +1,10 @@
+import logging
 import socket
 import struct
 
 __author__ = 'njhazelh'
+
+log = logging.getLogger("IP Packet")
 
 
 def packet_id_gen():

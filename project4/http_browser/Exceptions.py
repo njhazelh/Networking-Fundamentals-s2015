@@ -27,7 +27,12 @@ class MissingHeaderException(Exception):
     This exception represents when we try to get a header from message when the header
     does not exist in the message
     """
-    pass
+    def __init__(self, key, headers):
+        self.key = key
+        self.headers = headers
+
+    def __str__(self):
+        return "Key: %s\nData:\n%s" % (self.key, self.headers)
 
 
 class LockedDomainException(Exception):

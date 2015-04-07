@@ -1,12 +1,13 @@
-from Exceptions import LockedDomainException, NoDestinationException, EmptySocketException
+import logging
+
+from http_browser.Exceptions import LockedDomainException, NoDestinationException, EmptySocketException
+from http_browser.HttpSocket import HttpSocket
+from http_browser.BrowserState import BrowserState
+from http_browser.HttpClientMessage import HttpClientMessage
+from http_browser.HttpServerMessage import HttpServerMessage
+
 
 __author__ = 'Nick Jones'
-
-from HttpSocket import HttpSocket
-from BrowserState import BrowserState
-from HttpClientMessage import HttpClientMessage
-from HttpServerMessage import HttpServerMessage
-import logging
 
 log = logging.getLogger("browser")
 
@@ -24,23 +25,7 @@ class Browser:
         self.socket = HttpSocket()
         self.state = BrowserState()
         self.response = None
-
-    def lock_domain(self, domain):
-        """
-        Prevent the browser from accessing resources on other domains
-        :param domain: The domain the browser should be locked to.
-        """
-        self.domain = domain
-        self.socket.lock_domain(domain)
-        log.info("Locked the domain to %s", domain)
-
-    def unlock_domain(self):
-        """
-        Allow the browser to access resources on all domains.
-        """
         self.domain = None
-        self.socket.unlock_domain()
-        log.info("Unlocked the domain")
 
     def request(self, method, file, body=None, headers=None, dest=None):
         """

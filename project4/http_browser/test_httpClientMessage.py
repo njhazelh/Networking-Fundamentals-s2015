@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from http.HttpClientMessage import HttpClientMessage
+from http_browser.HttpClientMessage import HttpClientMessage
 
 
 __author__ = 'njhazelh'

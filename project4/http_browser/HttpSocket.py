@@ -1,9 +1,8 @@
 from tcp.TCPSocket import *
+from http_browser.Exceptions import LockedDomainException
+import socket
 
 __author__ = "Nick Jones"
-
-from http.Exceptions import LockedDomainException
-
 
 class HttpSocket:
     """
@@ -31,6 +30,7 @@ class HttpSocket:
             self.connect(dest)
         data = str(msg).encode()
         while True:
+            print("sending to %s\n:\t%s" % (dest, msg))
             sent = self.socket.sendall(data)
             if sent is None:
                 break
@@ -49,7 +49,7 @@ class HttpSocket:
             raise LockedDomainException(dest)
         else:
             self.close()
-            self.socket = TCPSocket()
+            self.socket = socket.socket()#TCPSocket()
             self.socket.connect(dest)
             self.dest = dest
 
@@ -58,7 +58,6 @@ class HttpSocket:
         Close the socket and set it to None
         """
         if self.socket is not None:
-            self.socket.shutdown()
             self.socket.close()
             self.socket = None
 

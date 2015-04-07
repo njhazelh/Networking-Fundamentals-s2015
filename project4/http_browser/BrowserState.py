@@ -1,4 +1,4 @@
-from http.CookieCache import CookieCache
+from http_browser.CookieCache import CookieCache
 
 __author__ = "Nick Jones"
 
