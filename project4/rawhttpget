@@ -1,7 +1,11 @@
 #! /usr/bin/python3
 
 import logging
+import sys
 from http.Browser import Browser
+from urllib.parse import urlparse
+from http.HttpServerMessage import HTTP_STATUS
+import socket
 
 logging.basicConfig(
     format='[%(asctime)s] {%(filename)-20s:%(lineno)-3d} %(levelname)s - %(message)s',
@@ -14,15 +18,40 @@ def main(argv):
     :param argv: The commmand line arguments parsed into a handy map.
     """
     log.info("Starting to get %s", args.url)
+    filename = parse_input(args.url)
     browser =  Browser()
     response = browser.get(args.url)
-    saveResponse(response)
+    saveResponse(response, filename)
     browser.close()
 
+def parse_input(url):
+    parsed = urlparse(url)
 
-def saveResponse(response):
-    pass
+    # validate url
+    if parsed.netloc == '':
+        print("domain name must be provided")
+        sys.exit(0)
+    try:
+        socket.gethostbyname(parsed.netloc)
+    except OSError:
+        print("Could not find IP address for domain name")
+        sys.exit(0)
 
+    # calculate filename to save result as
+    if parsed.path == '' or parsed.path[-1] == "/":
+        filename = "index.html"
+    else:
+        filename = parsed.path.split("/")[-1]
+
+    return filename
+
+def saveResponse(response, filename):
+    if response.status_code != HTTP_STATUS.OK:
+        log.critical("Failed to load resource. Status Code = %d", response.status_code)
+    else:
+        data = response.body
+        file = open(filename, 'w')
+        file.write(data)
 
 if __name__ == "__main__":
     import argparse
