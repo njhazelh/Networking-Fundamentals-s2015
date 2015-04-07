@@ -3,11 +3,11 @@ import struct
 
 __author__ = 'njhazelh'
 
-DONT_FRAGMENT = 2
-MORE_FRAGMENTS = 1
-
 
 def packet_id_gen():
+    """
+    :return: A generator that returns a infinite, cyclic sequence of 16-bit numbers.
+    """
     current = 0
     while True:
         yield current
@@ -15,18 +15,26 @@ def packet_id_gen():
         current = current & 0xFFFF
 
 
-packet_ids = packet_id_gen()
+PACKET_IDS = packet_id_gen()
 
 
 class IPPacket:
     def __init__(self, src, dest, data, generate=True):
+        """
+        Create an IP packet
+        :param src: The source of the packet. IPv4 address
+        :param dest: The destination of the packet. IPv4 address
+        :param data: The data to send in the packet
+        :param generate: Whether to generate a unique id for this packet.
+        :return:
+        """
         self.version = 4  # 4  bits
-        self.headerLen = 5  # 4  bits
+        self.header_num_words = 5  # 4  bits
         self.tos = 0  # 1  byte
         # total_length 16 bits
 
         if generate:
-            self.id = next(packet_ids)  # 2  bytes
+            self.id = next(PACKET_IDS)  # 2  bytes
         else:
             self.id = 0
         self.flag_reserved = 0
@@ -47,6 +55,11 @@ class IPPacket:
 
     @classmethod
     def from_network(cls, bytes):
+        """
+        Create an IP packet from bytes received from the network.
+        :param bytes: The byte-string to parse into a packet.
+        :return: A packet object representing the information in bytes
+        """
         if len(bytes) < 20:
             print("Not enough bytes")
             return None
@@ -55,7 +68,7 @@ class IPPacket:
         result = cls(socket.inet_ntoa(header[8]), socket.inet_ntoa(header[9]), b"", generate=False)
         version_ihl = header[0]
         result.version = version_ihl >> 4
-        result.headerLen = version_ihl & 0x0F
+        result.header_num_words = version_ihl & 0x0F
         result.tos = header[1] & 0xFF
         result.total_length = header[2] & 0xFFFF
 
@@ -73,24 +86,27 @@ class IPPacket:
         result.ttl = header[5]
         result.protocol = header[6]
         result.check = header[7]
-        if result.headerLen > 5:
-            result.options = bytes[20: result.headerLen * 4]
+        if result.header_num_words > 5:
+            result.options = bytes[20: result.header_num_words * 4]
         else:
             result.options = None
-        result.data = bytes[result.headerLen * 4:]
+        result.data = bytes[result.header_num_words * 4:]
         return result
 
     def __len__(self):
         totalLen = 0
-        totalLen += self.headerLen * 4
+        totalLen += self.header_num_words * 4
         totalLen += len(self.data)
         return totalLen * 4
 
     @property
     def header(self):
+        """
+        :return: A byte-string representation of the header to send over the network.
+        """
         flags = (self.flag_reserved << 2) | (self.flag_dont_fragment << 1) | self.flag_more_fragments
         header = struct.pack("!BBHHHBBH4s4s",
-                             ((((self.version & 0x0F) << 4) | (self.headerLen & 0x0F))) & 0xFF,
+                             ((((self.version & 0x0F) << 4) | (self.header_num_words & 0x0F))) & 0xFF,
                              self.tos & 0xFF,
                              self.total_length & 0xFFFF,
                              self.id & 0xFFFF,
@@ -106,20 +122,33 @@ class IPPacket:
 
     @property
     def flags(self):
+        """
+        :return: A tuple containing the three IP flags (reserved, don't_fragment, more_fragments)
+        """
         return (self.flag_reserved, self.flag_dont_fragment, self.flag_more_fragments)
 
     def to_bytes(self):
+        """
+        :return: This packet as a byte-string to send over the network
+        """
         return self.header + self.data
 
     def checksum(self):
+        """
+        :return: The checksum of this packet.
+        """
         data = self.header
         return checksum(data)
 
     def __str__(self):
+        """
+        Create a String representation of this IP packet.
+        :return: A string representing the data in this packet.
+        """
         string = ""
         labels = [
             ("Version", self.version),
-            ("Header length", self.headerLen),
+            ("Header length", self.header_num_words),
             ("TOS", self.tos),
             ("Total Length", self.total_length),
             ("ID", self.id),

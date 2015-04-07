@@ -1,6 +1,8 @@
 import re
 import threading
-from ip.IPPacket import IPPacket, checksum
+
+from ip.IPPacket import IPPacket
+
 
 __author__ = 'njhazelh'
 
@@ -10,6 +12,7 @@ import logging
 import queue
 
 log = logging.getLogger("ip")
+
 
 def get_ip(ifname='eth0'):
     """
@@ -29,7 +32,9 @@ def get_ip(ifname='eth0'):
         ip = socket.inet_ntoa(info[20:24])
     return ip
 
+
 HOST = get_ip()
+
 
 class IPSocket:
     def __init__(self):
@@ -65,10 +70,9 @@ class IPSocket:
         if packet.dest not in ["127.0.0.1", HOST] or packet.src != self.dest:
             return
 
-        print(str(packet))
         check = packet.checksum()
         if check != 0:
-            log.warn("BAD CHECKSUM: %d vs. %s",  check, packet.check)
+            log.warn("BAD CHECKSUM: %d vs. %s", check, packet.check)
 
         if packet.fragmentOffset == 0 and packet.flag_more_fragments == 0:
             print("Adding packet to complete queue")
@@ -88,8 +92,23 @@ class IPSocket:
             print(id, "not in partial packets")
             return
 
+        # Check packet is complete
         q = self.partial_packets[id].copy()
-        print(q)
+        last = 0
+        while not q.empty():
+            packet = q.get()
+            if last != packet.fragmentOffset:
+                return
+            last += (packet.total_length - packet.header_num_words * 4) / 8
+
+        # Packet must be complete to get here
+        data = b''
+        q = self.partial_packets[id]
+        while not q.empty():
+            packet = q.get()
+            data += packet.data
+        self.complete_packets.put(data)
+        del self.partial_packets[id]
 
 
     def loop(self):
