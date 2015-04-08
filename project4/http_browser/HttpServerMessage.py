@@ -1,7 +1,9 @@
 import logging
+import sys
 
 from http_browser.CookieCache import CookieCache
 from http_browser.Exceptions import BadHeaderException, BadStatusException, EmptySocketException, MissingHeaderException
+from http_browser.SocketReader import SocketReader
 
 
 __author__ = 'njhazelh'
@@ -46,7 +48,7 @@ class HttpServerMessage:
         Read the headers and body into this structure from the network.
         :param sock: A HttpSocket containing a server response
         """
-        file = sock.get_socket().makefile("rb")
+        file = SocketReader(sock.get_socket())
         self._read_status(file)
         self._read_headers(file)
 
@@ -54,7 +56,6 @@ class HttpServerMessage:
             self._read_chunked(file)
         else:
             self._read_body(int(self.get_header("content-length")), file)
-        file.close()
 
     def _read_status(self, file):
         """
@@ -76,16 +77,16 @@ class HttpServerMessage:
         except ValueError:
             raise BadStatusException(status)
 
-    def _read_headers(self, file):
+    def _read_headers(self, socket_reader):
         """
         Read the headers for this message.
-        :param file: The file for the socket to read from.
+        :param socket_reader: The file for the socket to read from.
         :except EmptySocketException: The socket has closed.
         :except BadHeaderException: A header is malformed somehow.
         """
         key = ""
         while True:
-            line = file.readline()
+            line = socket_reader.readline()
             self.data += line
 
             if line is None:
@@ -127,22 +128,25 @@ class HttpServerMessage:
         else:
             self.headers[key] = value
 
-    def _read_body(self, size, file):
+    def _read_body(self, size, socket_reader):
         """
         Read the body of the message. This should be done if the message
         has a body and the transfer-encoding header is not "chunked".
         :param size: The size of the body in bytes
-        :param file: The file to read the body from.
+        :param socket_reader: The file to read the body from.
         """
         data = b""
         num_read = 0
+        progress_bar(num_read, size)
         while num_read < size:
-            new_data = file.read(size)
+            new_data = socket_reader.read(size)
             if new_data is None:
                 raise EmptySocketException()
             new_data = new_data
             num_read += len(new_data)
             data += new_data
+            progress_bar(num_read, size)
+        sys.stdout.write("\n")
         self.body = data
         self.data += data
 
@@ -210,3 +214,18 @@ class HttpServerMessage:
         status = "{} {} {}".format(self.version, self.status_code, self.reason)
         headers = "\r\n".join(["{}: {}".format(key, self.headers[key]) for key in self.headers])
         return "\r\n".join([status, headers, "", self.body])
+
+
+CLEAR_LINE = "\033[2K"
+
+def progress_bar(done, max):
+    percent = float(done) / max
+    width = 80
+    done_width = int(width * percent) - 1
+    rest_width = width - done_width - 1
+    sys.stdout.write(CLEAR_LINE)
+    sys.stdout.write("\r[{:s}>{:s}] {:d}% {:d}/{:d}".format("=" * done_width,
+                                                           " " * rest_width,
+                                                           int(percent * 100), done, max,
+                                                           done_width=done_width,
+                                                           rest_width=rest_width))
