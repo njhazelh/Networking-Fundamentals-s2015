@@ -24,7 +24,11 @@ def main(argv):
     dest, path, filename = parse_input(args.url)
     browser = Browser()
     print("Getting %s from %s" % (path, dest))
-    response = browser.get(path, dest=dest)
+    try:
+        response = browser.get(path, dest=dest)
+    except ConnectionRefusedError:
+        print("Could not connect to server")
+        sys.exit()
     print("Saving response to %s" % (filename))
     saveResponse(response, filename)
     browser.close()
