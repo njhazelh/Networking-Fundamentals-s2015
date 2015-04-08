@@ -30,7 +30,6 @@ class HttpSocket:
             self.connect(dest)
         data = str(msg).encode()
         while True:
-            print("sending to %s\n:\t%s" % (dest, msg))
             sent = self.socket.sendall(data)
             if sent is None:
                 break

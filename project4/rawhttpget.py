@@ -8,6 +8,7 @@ import socket
 from http_browser.Browser import Browser
 from http_browser.HttpServerMessage import HTTP_STATUS
 
+__author__ = "njhazelh"
 
 logging.basicConfig(
     format='[%(asctime)s] {%(filename)-20s:%(lineno)-3d} %(levelname)s - %(message)s',
@@ -20,10 +21,11 @@ def main(argv):
     Get the resource from the internet.
     :param argv: The commmand line arguments parsed into a handy map.
     """
-    log.info("Starting to get %s", args.url)
     dest, path, filename = parse_input(args.url)
     browser = Browser()
+    print("Getting %s from %s" % (path, dest))
     response = browser.get(path, dest=dest)
+    print("Saving response to %s" % (filename))
     saveResponse(response, filename)
     browser.close()
 
@@ -45,7 +47,6 @@ def parse_input(url):
 
     domain = parsed.netloc
     port = 80
-    path = parsed.path
 
     # calculate filename to save result as
     if parsed.path == '' or parsed.path[-1] == "/":
@@ -58,7 +59,7 @@ def parse_input(url):
 
 def saveResponse(response, filename):
     if response.status_code != HTTP_STATUS.OK:
-        log.critical("Failed to load resource. Status Code = %d", response.status_code)
+        print("Failed to load resource. Status Code = %d" % (response.status_code))
     else:
         data = response.body
         file = open(filename, 'wb')

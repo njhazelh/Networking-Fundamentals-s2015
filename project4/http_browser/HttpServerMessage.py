@@ -135,12 +135,13 @@ class HttpServerMessage:
         :param file: The file to read the body from.
         """
         data = b""
-        while size > 0:
+        num_read = 0
+        while num_read < size:
             new_data = file.read(size)
             if new_data is None:
                 raise EmptySocketException()
             new_data = new_data
-            size -= len(new_data)
+            num_read += len(new_data)
             data += new_data
         self.body = data
         self.data += data
@@ -152,6 +153,7 @@ class HttpServerMessage:
         :param file: The file to read this from.
         """
         log.debug("Reading a chunked message")
+        print("Reading Chunked message. Cannot predict length")
         body = b""
         while True:
             size_line = file.readline()
