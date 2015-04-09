@@ -115,7 +115,6 @@ class TCPPacket:
 
         packet.bytes = data
 
-        print(packet, "\n")
         return packet
 
     @classmethod
@@ -139,7 +138,7 @@ class TCPPacket:
 
     @classmethod
     def fin(cls, src, dest, seq, data=b''):
-        packet = cls(src, dest, data=data)
+        packet = cls(src, dest, seq, data=data)
         packet.fin = True
         return packet
 
