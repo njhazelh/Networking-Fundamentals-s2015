@@ -7,7 +7,6 @@ from ip.IPPacket import IPPacket
 __author__ = 'njhazelh'
 
 import socket
-import fcntl, struct
 import logging
 import queue
 
@@ -54,21 +53,17 @@ class IPSocket:
             log.warn("BAD CHECKSUM: %d vs. %s", check, packet.check)
 
         if packet.fragmentOffset == 0 and packet.flag_more_fragments == 0:
-            print("Adding packet to complete queue")
             self.complete_packets.put(packet.data)
         elif packet.flag_more_fragments == 1 and packet.id not in self.partial_packets:
-            print("Creating new partial queue for ", packet.id)
             q = queue.PriorityQueue()
             q.put((packet.fragmentOffset, packet))
             self.partial_packets[packet.id] = q
         else:
-            print("Adding packet to partial queue for ", packet.id)
             self.partial_packets[packet.id].put((packet.fragmentOffset, packet))
             self.check_packet_is_complete(packet.id)
 
     def check_packet_is_complete(self, id):
         if id not in self.partial_packets:
-            print(id, "not in partial packets")
             return
 
         # Check packet is complete
@@ -104,7 +99,10 @@ class IPSocket:
 
     def recv(self, max=None):
         if self.partially_recvd_packet is None:
-            packet = self.complete_packets.get()
+            try:
+                packet = self.complete_packets.get(block=False)
+            except queue.Empty:
+                return None
         else:
             packet = self.partially_recvd_packet
 
@@ -116,6 +114,10 @@ class IPSocket:
             self.partially_recvd_packet = packet[max:]
 
         return recvd
+
+    def has_data(self):
+        return self.partially_recvd_packet is not None or \
+               not self.complete_packets.empty()
 
     def wrap_data(self, data):
         p = IPPacket(self.src_addr, self.dest, data)

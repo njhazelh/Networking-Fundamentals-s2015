@@ -1,6 +1,7 @@
-import math
 import random
-import sys
+
+from tcp.Exceptions import ClosedSocketException
+
 
 __author__ = 'njhazelh'
 
@@ -9,9 +10,11 @@ from tcp.TCPPacket import *
 from tcp.util import *
 import threading
 import datetime
+import time
 
 HOST = get_ip()
-TIME_ALPHA = 0.7 # NEW_RTT = ALPHA * OLD_RTT + (1 - ALPHA) * PACKET_RTT
+TIME_ALPHA = 0.7  # NEW_RTT = ALPHA * OLD_RTT + (1 - ALPHA) * PACKET_RTT
+
 
 class CONNECTION_STATE:
     NEW = 0
@@ -19,6 +22,8 @@ class CONNECTION_STATE:
     OPEN = 2
     FIN_SENT = 3
     CLOSED = 4
+    RST = 5
+
 
 class TCPSocket:
     def __init__(self):
@@ -26,12 +31,12 @@ class TCPSocket:
         self.data_send_queue = queue.Queue()
         self.data_recv_queue = queue.Queue()
         self.out_of_order_packets = []
-        port = random.randrange(1024, 65536)
-        self.src = (HOST, port)
+        self.src = (HOST, random.randrange(1024, 65536))
         self.state = CONNECTION_STATE.NEW
+        self.thread = None
 
     def connect(self, dest):
-        if self.state not in [CONNECTION_STATE.CLOSED, CONNECTION_STATE.NEW]:
+        if self.thread is not None and self.thread.is_alive():
             return
 
         # Connection State
@@ -46,17 +51,19 @@ class TCPSocket:
         self.ss_thresh = float("inf")
         self.congestion_window = 1
         self.dest_window = float('inf')
+        self.bytes_in_net = 0
         self.RTT = None
+        self.MSS = 536
         self.next_packet = {
             'fin': False,
             'syn': False,
             'ack': False,
             'ack_num': False,
-            'seq': 0
+            'seq': random.randrange(0, 1 << 32)
         }
-        self.packets_in_network = []
-        self.seen_sequence_nums = set()
-        self.timed_out_packets = []
+        self.current_send_packet = None
+        self.packets_in_network = set()
+        self.resend_queue = queue.PriorityQueue()
 
         # start the thread
         self.thread = threading.Thread(name="tcp-loop", target=self.loop)
@@ -82,13 +89,17 @@ class TCPSocket:
         :param max_bytes: The maximum number of bytes to read. None means there is not limit, and the
                           socket should read as much as possible.
         """
+        self.check_socket_error()
+
         if self.current_recv_packet is None:
             packet = None
             while True:
-                print("READING IP PACKET")
-                packet = self.data_recv_queue.get()
-                if int.from_bytes(packet[2:3], 'big') == self.src[1]:
-                    break
+                self.check_socket_error()
+                if not self.data_recv_queue.empty():
+                    packet = self.data_recv_queue.get(block=False)
+                    if int.from_bytes(packet[2:3], 'big') == self.src[1]:
+                        breakgit
+                    time.sleep(0)
             if max_bytes is None or len(packet) <= max_bytes:
                 return packet
             else:
@@ -118,33 +129,34 @@ class TCPSocket:
         self.next_packet['fin'] = True
 
 
-    #================================================================
+    # ================================================================
     #
-    #                     HELPER METHODS
+    # HELPER METHODS
     #
-    #================================================================
+    # ================================================================
 
     def loop(self):
         """
         Thread target for running TCP separate from application.
         """
-        syn_packet = TCPPacket.syn((HOST, 0), self.dest)
-        syn_packet.set_checksum()
-        self.socket.send(syn_packet.to_bytes())
-        self.state = CONNECTION_STATE.SYN_SENT
-
         while self.state != CONNECTION_STATE.CLOSED:
+            self.print_state()
+            self.send_new_packets()
             self.reset_next_packet()
-            print("\nGETTING PACKET\n=======================================")
-            packet = self.socket.recv()
-            print("\nGOT PACKET\n=======================================")
-            self.parse_packet(packet)
-            print("\nPARSED RESPONSE\n=======================================")
-            self.check_timeouts()
-            print("\nCHECKED TIMEOUTS\n=======================================")
-            self.send_new_packet()
-            print("\nSENT NEW PACKETS\n=======================================")
 
+            packet = self.socket.recv()
+            if packet is not None:
+                self.parse_packet(packet)
+
+            self.check_timeouts()
+
+            # Gotta avoid wakelock
+            time.sleep(1.0 / 1000)
+
+
+    def check_socket_error(self):
+        if self.state == CONNECTION_STATE.RST:
+            raise ClosedSocketException()
 
     def reset_next_packet(self):
         self.next_packet['ack'] = False
@@ -159,51 +171,69 @@ class TCPSocket:
             print("<<<<<<<<<<<<<BAD CHECKSUM>>>>>>>>>>>>>>", check)
             return
 
+        for o in packet.options:
+            if o['kind'] == 2 and o['length'] == 4:
+                self.MSS = o['value']
+                break
+
         if packet.syn and packet.ack:
-            self.state = CONNECTION_STATE.OPEN
-            self.next_packet['ack'] = True
-            self.next_packet['ack_num'] = 1 + packet.seq
             self.handle_ack(packet)
         elif packet.fin and packet.ack:
             self.state = CONNECTION_STATE.CLOSED
-            self.next_packet['ack'] = True
-            self.next_packet['ack_num'] = 1 + packet.seq
+            self.handle_ack(packet)
+        elif packet.rst:
+            self.state = CONNECTION_STATE.RST
+            sys.exit()
+        elif packet.ack:
+            if self.state == CONNECTION_STATE.SYN_SENT:
+                self.state = CONNECTION_STATE.OPEN
             self.handle_ack(packet)
         elif packet.fin:
             self.next_packet['fin'] = True
-            self.next_packet['ack'] = True
-            self.next_packet['ack_num'] = 1 + packet.seq
-        elif packet.ack:
-            self.handle_ack(packet)
         else:
-            self.next_packet['ack'] = True
-            self.next_packet['ack_num'] = packet.seq
-
-        if packet.seq not in self.seen_sequence_nums:
             pass
+
         self.dest_window = packet.window
 
     def handle_ack(self, packet):
         """
         Handles the ACK clocking part of TCP.
         """
+        self.next_packet['ack'] = True
+        self.next_packet['ack_num'] = packet.seq + 1
+
+        # Increase the congestion window.
         if self.congestion_window < self.ss_thresh:
             self.congestion_window += 1
         else:
-            self.congestion_window += 1 / math.floor(self.congestion_window)
+            self.congestion_window += 1 / self.congestion_window
 
-        acked_packets = []
+        # Increase sequence number to next byte the destination wants.
+        if packet.ack_num > self.next_packet['seq']:
+            self.next_packet['seq'] = packet.ack_num
+
+        # Find packets that were just acked.
+        acked_packets = set(filter(lambda p: p[0].seq < self.next_packet['seq'], self.packets_in_network))
+
+        # Remove them from the packets in the network
+        self.packets = self.packets_in_network.difference_update(acked_packets)
+
+        # Manage their RTTs.
         now = datetime.datetime.now()
-        for p in sorted(self.packets_in_network, key=lambda p: p['packet'].seq):
-            if p['packet'].seq < p['packet'].ack_num:
-                if self.RTT == None:
-                    self.RTT = now - p['time_sent'].total_seconds()
-                elif not p['timed_out']:
-                    packet_rtt = p['time_sent'] - now
-                    self.RTT = TIME_ALPHA * self.RTT + (1 - TIME_ALPHA) * packet_rtt.total_seconds() * 1000
-                acked_packets.append(p)
         for p in acked_packets:
-            self.packets_in_network.remove(p)
+            if not p[2]:
+                # Packet didn't time out so it's valid for RTT calculation
+                packet_rtt = now - p[1]
+                if self.RTT is None:
+                    self.RTT = packet_rtt.total_seconds() * 1000
+                else:
+                    self.RTT = TIME_ALPHA * self.RTT + \
+                               (1 - TIME_ALPHA) * packet_rtt.total_seconds() * 1000
+
+        # Remove Bytes from the network
+        for p, _, _ in acked_packets:
+            self.bytes_in_net -= len(p.to_bytes())
+
 
     def check_timeouts(self):
         if self.RTT is None:
@@ -212,40 +242,101 @@ class TCPSocket:
         timeout_packets = []
         now = datetime.datetime.now()
         for p in self.packets_in_network:
-            if now - p.sent_at > 2 * self.RTT:
-                timeout_packets.append(p)
-                p['timed_out'] = True
+            dt = (now - p[1]).total_seconds() * 1000
+            if dt > 2 * self.RTT:
+                self.packets_in_network.remove(p)
+                timeout_packets.append(p[0])
 
         if len(timeout_packets) > 0:
             self.ss_thresh = self.congestion_window / 2
             self.congestion_window = 1
-            self.timed_out_packets.extend(timeout_packets)
 
+            for p in timeout_packets:
+                self.resend_queue.put((p.seq, p))
 
+    def send_new_packets(self):
+        while (self.current_resend_packet is not None or not self.resend_queue.empty()) and self.room_for_packet():
+            self.resend_packet()
+
+        while not self.data_send_queue.empty() and self.room_for_packet():
+            self.send_new_packet()
+
+    def room_for_packet(self):
+        return self.calc_packet_size() > 28
+
+    def resend_packet(self):
+        pass
 
     def send_new_packet(self):
-        print("NEXT PACKET", self.next_packet)
-        packet_data =  b''
-        packet_size = self.calc_packet_size()
-        i = 0
-        while not self.data_send_queue.empty() and i < packet_size:
-            packet_data += self.data_send_queue.get()
-        packet = TCPPacket(self.src, self.dest, self.next_packet['seq'], self.next_packet['ack_num'], packet_data)
-        packet.ack = self.next_packet['ack']
-        packet.syn = self.next_packet['syn']
-        packet.fin = self.next_packet['fin']
+        max_packet_size = self.calc_packet_size()
+
+        if max_packet_size < 20:
+            return
+
+        # Get data
+        if self.state == CONNECTION_STATE.NEW:
+            # Start the handshake. Send a SYN
+            packet = TCPPacket.syn(self.src, self.dest)
+            packet.seq = self.next_packet['seq']
+            self.state = CONNECTION_STATE.SYN_SENT
+
+        elif self.state == CONNECTION_STATE.SYN_SENT and self.next_packet['ack']:
+            # Send an ACK to their SYN_ACK
+            seq = self.next_packet['seq']
+            packet = TCPPacket.ack(self.src, self.dest, seq, self.next_packet['ack_num'])
+            self.state = CONNECTION_STATE.OPEN
+
+        elif self.state == CONNECTION_STATE.OPEN:
+            # Send a packet of data or ack another packet.
+            packet_size = self.MSS
+            if not self.next_packet['ack'] and self.data_send_queue.empty():
+                return
+
+            packet_data = b''
+            i = 0
+            while not self.data_send_queue.empty() and i < packet_size:
+                packet_data += self.data_send_queue.get()
+
+            # Create packet
+            packet = TCPPacket(self.src,
+                               self.dest,
+                               self.next_packet['seq'],
+                               self.next_packet['ack_num'],
+                               packet_data)
+
+            # Configure packet
+            packet.ack = self.next_packet['ack']
+            packet.syn = self.next_packet['syn']
+            packet.fin = self.next_packet['fin']
+        else:
+            print("SKIPPING SEND", self.state)
+            return
+
         packet.set_checksum()
-        self.next_packet['seq'] += max(1, len(packet_data))
-        self.packets_in_network.append({
-            'packet': packet,
-            'time_sent': datetime.datetime.now(),
-            'timed_out': False
-        })
+        packet_bytes = packet.to_bytes()
+
+        # Track that we're sending this packet.
+        self.packets_in_network.add((packet, datetime.datetime.now(), False))
+        self.bytes_in_net += len(packet_bytes)
+
         print("\nCREATED PACKET\n=======================================")
         print(packet)
-        self.socket.send(packet.to_bytes())
+
+        # Send packet
+        self.socket.send(packet_bytes)
         print("\nSENT PACKET\n=======================================")
 
     def calc_packet_size(self):
-        return min(self.congestion_window, self.dest_window)
+        return min(self.congestion_window, self.dest_window) * self.MSS - self.bytes_in_net
 
+    def print_state(self):
+        pairs = [
+            ("Window", self.congestion_window),
+            ("RTT", self.RTT),
+            ("Next Packet", self.next_packet),
+            ("MMS", self.MSS),
+            ("Bytes in Net", self.bytes_in_net)]
+        string = ""
+        for pair in pairs:
+            string += "%s: %s\n" % pair
+        print(string)
