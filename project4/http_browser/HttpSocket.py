@@ -48,7 +48,7 @@ class HttpSocket:
             raise LockedDomainException(dest)
         else:
             self.close()
-            self.socket = socket.socket()#TCPSocket()
+            self.socket = TCPSocket()
             self.socket.connect(dest)
             self.dest = dest
 

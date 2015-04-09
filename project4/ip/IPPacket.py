@@ -189,8 +189,7 @@ def checksum(bytes):
         i += 2
     if count > 0:
         # Add the last odd byte if there is one
-        print(bytes[i])
-        sum += bytes[i]
+        sum += bytes[i] << 8
     while (sum >> 16) > 0:
         # Carry the overflow
         sum = (sum & 0xffff) + (sum >> 16)
