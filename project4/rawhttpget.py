@@ -39,6 +39,14 @@ def main(argv):
 
 
 def parse_input(url):
+    """
+    Convert the user input url into something we can use.
+
+    If the url doesn't have a file name, use index.html
+
+    :param url: The url to convert
+    :return: A domain/port pair, the url, and the filename to save under.
+    """
     if not url.startswith('http'):
         url = '%s%s' % ('http://', url)
     parsed = urlparse(url)
@@ -66,6 +74,11 @@ def parse_input(url):
 
 
 def saveResponse(response, filename):
+    """
+    Save the response to a file.
+    :param response: The HTTP Response object.
+    :param filename: The name to save the data under
+    """
     if response.status_code != HTTP_STATUS.OK:
         print("Failed to load resource. Status Code = %d" % (response.status_code))
     else:

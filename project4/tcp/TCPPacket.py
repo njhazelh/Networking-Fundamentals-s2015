@@ -1,6 +1,5 @@
 import struct
 import socket
-import re
 
 from tcp.Exceptions import MalformedPacketException
 
@@ -77,6 +76,13 @@ class TCPPacket:
 
     @classmethod
     def from_network(cls, data, src_addr, dest_addr):
+        """
+        Create a TCP packet from bytes aquired via the network (or any other source).
+        :param data: The data to convert/
+        :param src_addr: The ip of the src
+        :param dest_addr: The ip of the dest
+        :return: The constructed packet.
+        """
         if len(data) < 20:
             raise MalformedPacketException(data)
         header = struct.unpack("!HHLL2sHHH", data[0:20])
@@ -114,47 +120,44 @@ class TCPPacket:
         packet.set_options_from_bytes(data[20: data_offset * 4])
         packet.data = data[data_offset * 4:]
 
-        #print("RAW PACKET DATA\n", data.decode("utf-8", "replace"))
-        #print("\n==================================", packet.data.decode())
-
         packet.bytes = data
 
         return packet
 
     @classmethod
     def ack(cls, src, dest, seq, ack_num, data=b''):
+        """
+        A shortcut for creating an ACK packet.
+        """
         packet = cls(src, dest, seq, ack_num, data)
         packet.ack = True
         return packet
 
     @classmethod
     def syn(cls, src, dest, seq=0):
+        """
+        A shortcut for creating a SYN packet
+        """
         packet = cls(src, dest, seq)
         packet.syn = True
         return packet
 
     @classmethod
-    def syn_ack(cls, src, dest, seq, ack_num):
-        packet = cls(src, dest, seq, ack_num)
-        packet.syn = True
-        packet.ack = True
-        return packet
-
-    @classmethod
     def fin(cls, src, dest, seq, data=b''):
+        """
+        Short a shortcut for creating a FIN packet
+        """
         packet = cls(src, dest, seq, data=data)
         packet.fin = True
         return packet
 
-    @classmethod
-    def fin_ack(cls, src, dest, seq, ack_num, data=b''):
-        packet = cls(src, dest, seq, ack_num, data)
-        packet.fin = True
-        packet.ack = True
-        return packet
 
     @property
     def flags(self):
+        """
+        Convert the flags to a single int.
+        :return: The flags combined.
+        """
         flags = 0
         flags = flags | (self.urg << 5)
         flags = flags | (self.ack << 4)
@@ -166,6 +169,10 @@ class TCPPacket:
 
     @property
     def header(self):
+        """
+        Construct the TCP packet header
+        :return: The TCP header
+        """
         dataoffset_resvd_flags = 0
         dataoffset_resvd_flags = dataoffset_resvd_flags | ((self.data_offset & 0b1111) << 12)
         dataoffset_resvd_flags = dataoffset_resvd_flags | (self.flags & 0b111111)
@@ -182,6 +189,10 @@ class TCPPacket:
 
 
     def set_options_from_bytes(self, options_bytes):
+        """
+        Set the options from bytes
+        :param options_bytes: The bytes to read the options from
+        """
         options = []
         index = 0
         offset_bytes = 4 * (self.data_offset - 5)
@@ -206,6 +217,10 @@ class TCPPacket:
 
 
     def generate_options(self):
+        """
+        Convert the options to bytes
+        :return: The options as bytes.
+        """
         if self.data_offset == 5:
             return b''
 
@@ -228,30 +243,54 @@ class TCPPacket:
 
     @property
     def pseudo_header(self):
+        """
+        Construct the pseudo-header used in the checksum.
+        :return: the pseudo-header
+        """
         return struct.pack("!4s4sBBH",
                            socket.inet_aton(self.src[0]),
                            socket.inet_aton(self.dest[0]),
                            0, 6, len(self))
 
     def to_bytes(self):
+        """
+        The main purpose of this class.
+        :return: Bytes to send over the network.
+        """
         bytes = self.header
         bytes += self.data
         return bytes
 
     def set_checksum(self):
+        """
+        Set the checksum to the value returned by checksum().
+
+        It's not recommended to do this on packets from the network,
+        unless you want to lose the original checksum.
+        """
         self.check = self.checksum()
 
     def checksum(self):
-        if self.bytes:
+        """
+        :return: The 16-bit one's complement of all the bytes in this packet.
+        """
+        if self.bytes is not None:
             return checksum(self.pseudo_header + self.bytes)
         else:
             return checksum(self.pseudo_header + self.to_bytes())
 
     def __len__(self):
+        """
+        :return: The number of bytes in this packet
+        """
         data_len = len(self.data)
         return self.data_offset * 4 + data_len
 
     def __str__(self):
+        """
+        Convert this object to a readable string
+        :return: A readable string representation.
+        """
         string = ""
         info = [
             ("SRC", self.src),
@@ -279,11 +318,30 @@ class TCPPacket:
         return string
 
     def __lt__(self, other):
+        """
+        Compare Packets by their seq number
+        :param other: Another TCPPacket
+        :return: Whether this or that packet has
+                 a lower sequence number.
+        """
         return self.seq < other.seq
 
     def is_valid(self, src, dest):
+        """
+        Does the packet have a valid checksum and is it from
+        src to dest?
+
+        Note: This will probably be used to validate packets
+        from the network.  In this case, src will be the remote
+        server (our dest), and dest will be us (remote's dest).
+
+        :param src: A domain/port tuple representing the source.
+        :param dest: A domain/port tuple representing the dest.
+        :return: True if the packet is valid, else false.
+        """
         check = self.checksum()
         return check == 0 and self.src == src and self.dest == dest
+
 
 def checksum(bytes):
     """

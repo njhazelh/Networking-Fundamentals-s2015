@@ -8,6 +8,10 @@ __author__ = 'njhazelh'
 
 
 def dump_bytes(bytes):
+    """
+    Dump the bytes to hex in 4 column rows.
+    :param bytes: The bytes to dump
+    """
     print()
     for index, byte in zip(range(1, len(bytes) + 1), bytes):
         sys.stdout.write("%2X " % (byte))

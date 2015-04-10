@@ -28,6 +28,16 @@ class CONNECTION_STATE:
 
 
 class TCPSocket:
+    """
+    This class is an implementation of TCP built on a custom
+    implementation of IP.  It functions as any old socket would.
+
+        socket.send(data)
+        data = socket.recv(max_bytes)
+
+    It has been known to rival wget for speed, although it's
+    nowhere near as stable.
+    """
     def __init__(self):
         self.socket = None
         self.data_send_queue = queue.Queue()
@@ -37,6 +47,10 @@ class TCPSocket:
         self.thread = None
 
     def connect(self, dest):
+        """
+        Create a new connection
+        :param dest: The destination (address, port)
+        """
         if self.thread is not None and self.thread.is_alive():
             # Already connected
             return
@@ -96,7 +110,7 @@ class TCPSocket:
         # The number of bytes of data read so far.
         self.data_read = 0
 
-        self.out_of_order_packets =  queue.PriorityQueue()
+        self.out_of_order_packets = queue.PriorityQueue()
         self.seen_seq_nums = set()
 
         # start the thread
@@ -123,6 +137,7 @@ class TCPSocket:
         Get data from the socket
         :param max_bytes: The maximum number of bytes to read. None means there is not limit, and the
                           socket should read as much as possible.
+        :return: A byte string obtained via the socket with fewer than max_bytes bytes.
         """
         packet = b''
         self.check_socket_error()
@@ -179,9 +194,7 @@ class TCPSocket:
         self.handshake()
 
         while self.state != CONNECTION_STATE.CLOSED:
-            #self.print_state()
             self.send_new_packets()
-            self.reset_next_packet()
 
             while True:
                 packet = self.socket.recv()
@@ -189,7 +202,6 @@ class TCPSocket:
                     self.parse_packet(packet)
                 else:
                     break
-                time.sleep(1.0 / 1000)
 
             if self.state == CONNECTION_STATE.RST_RECVD or self.state == CONNECTION_STATE.FIN_RECVD:
                 self.shutdown()
@@ -198,13 +210,15 @@ class TCPSocket:
             self.check_timeouts()
 
             # Gotta avoid busy wait
-            time.sleep(1.0 / 1000)
+            time.sleep(50.0 / 1000)
 
     def handshake(self):
-        #self.force_die()
+        """
+        Perform the three-way handshake.
+        """
 
         # Choose the starting seq number
-        self.frontier_seq = 0#random.randrange(0, 1 << 32)
+        self.frontier_seq = random.randrange(0, 1 << 32)
 
         # Send the SYN packet to create the connection
         syn = TCPPacket.syn(self.src, self.dest, self.frontier_seq)
@@ -221,7 +235,7 @@ class TCPSocket:
             p = TCPPacket.from_network(p, self.dest[0], self.src[0])
             if p.src == self.dest and p.dest == self.src and p.syn and p.ack:
                 break
-            time.sleep(1.0 / 1000)
+            time.sleep(10.0 / 1000)
 
         # Calculate Initial RTT
         arrive_time = datetime.datetime.now()
@@ -248,15 +262,20 @@ class TCPSocket:
         self.state = CONNECTION_STATE.OPEN
 
     def check_socket_error(self):
+        """
+        If there's a socket, error raise an exception.
+        """
         if self.state == CONNECTION_STATE.RST:
             raise ClosedSocketException()
 
-    def reset_next_packet(self):
-        np = self.next_packet
-        np['fin'] = False
-
 
     def parse_packet(self, packet):
+        """
+        Convert the packet to an object.
+        Filter packets that aren't part of this connection.
+        Store data and ACK appropriately.
+        :param packet: A byte string containing a tcp packet.
+        """
         packet = TCPPacket.from_network(packet, self.dest[0], self.src[0])
 
         # Check validity
@@ -282,24 +301,19 @@ class TCPSocket:
             # This is the packet we need.
             self.next_packet['next_expected_seq'] = next_seq
             self.data_recv_queue.put(packet.data)
-            #print("PACKET DATA for %d" % (packet.seq), packet.data.decode())
             self.data_read += len(packet.data)
-            print("\n%d packets in out_of_order" % (self.out_of_order_packets.qsize()))
-            print("Next seq number should be %d" % (next_seq))
             while not self.out_of_order_packets.empty():
                 p = self.out_of_order_packets.get()
-                print("LOOKING AT PACKET %d IN OUT_OF_ORDER" % (p.seq))
                 if p.seq == next_seq:
                     self.data_recv_queue.put(p.data)
                     self.data_read += len(p.data)
                     next_seq = p.seq + len(p.data)
-                    #print("PULLED %d OFF THE QUEUE" % (p.seq))
                 else:
                     self.out_of_order_packets.put(p)
                     break
-        elif len(packet.data) > 0 and packet.seq > self.next_packet['next_expected_seq'] and packet.seq not in self.seen_seq_nums:
+        elif len(packet.data) > 0 and packet.seq > self.next_packet[
+            'next_expected_seq'] and packet.seq not in self.seen_seq_nums:
             # Packet is too early, store it.
-            #print("PACKET %d IS OUT OF ORDER" % (packet.seq))
             self.out_of_order_packets.put(packet)
             self.seen_seq_nums.add(packet.seq)
 
@@ -308,13 +322,10 @@ class TCPSocket:
             p = TCPPacket.ack(self.src, self.dest, self.frontier_seq, self.next_packet['next_expected_seq'])
             p.set_checksum()
             self.socket.send(p.to_bytes())
-            #print("ACKED PACKET = ", p.ack_num)
 
-        self.reset_next_packet()
         self.dest_window = packet.window
 
         if packet.fin:
-            #print("SAW A FIN PACKET============================================================================")
             self.state = CONNECTION_STATE.FIN_RECVD
         elif packet.rst:
             self.state = CONNECTION_STATE.RST_RECVD
@@ -330,8 +341,7 @@ class TCPSocket:
             self.congestion_window += 1 / self.congestion_window
 
         # Increase sequence number to next byte the destination wants.
-        self.frontier_seq = packet.ack_num #self.seq_frontiers.pop()
-        #print("FRONTIER = ", self.frontier_seq)
+        self.frontier_seq = packet.ack_num  # self.seq_frontiers.pop()
 
         # Find packets that were just acked.
         acked_packets = set()
@@ -357,6 +367,10 @@ class TCPSocket:
 
 
     def check_timeouts(self):
+        """
+        Check to see if any previously sent packets have timed out while waiting to be
+        ACKed
+        """
         if self.RTT is None:
             return
 
@@ -376,6 +390,10 @@ class TCPSocket:
                 self.resend_queue.put((p[0].seq, p[0]))
 
     def send_new_packets(self):
+        """
+        Send new packets containing the data passed into the socket via send,
+        and resend timed out packets. Do so until the window if full.
+        """
         while not self.resend_queue.empty() and self.network_space() > 0:
             self.resend_packet()
 
@@ -383,6 +401,10 @@ class TCPSocket:
             self.send_new_packet()
 
     def resend_packet(self):
+        """
+        If there are any packets that have timed out, send the one with the lowest
+        sequence number
+        """
         if not self.resend_queue.empty():
             seq, packet = self.resend_queue.get()
         else:
@@ -391,7 +413,6 @@ class TCPSocket:
         max_packet_size = self.MSS
 
         if len(packet) <= max_packet_size:
-            #print("RESENT PACKET\n==============================", packet)
             self.socket.send(packet.to_bytes())
             self.packets_in_network.add((packet, datetime.datetime.now(), True))
             self.current_resend_packet = None
@@ -400,6 +421,9 @@ class TCPSocket:
 
 
     def send_new_packet(self):
+        """
+        If there is any data to send, send a packet containing it.
+        """
         max_packet_size = self.MSS
 
         # Get data
@@ -426,30 +450,14 @@ class TCPSocket:
         # Track that we're sending this packet.
         self.packets_in_network.add((packet, datetime.datetime.now(), False))
 
-        #print("\nCREATED PACKET\n=======================================")
-        #print(packet)
 
         # Send packet
         self.socket.send(packet_bytes)
-        #print("SENT PACKET\n\n")
 
 
     def network_space(self):
-        return min(self.congestion_window, self.dest_window) / self.MSS  - len(self.packets_in_network)
-
-    def print_state(self):
-        pairs = [
-            ("Window", self.congestion_window),
-            ("Dest Window", self.dest_window),
-            ("SRC", self.src),
-            ("DEST", self.dest),
-            ("RTT", self.RTT),
-            ("SS_THRES", self.ss_thresh),
-            ("Next Packet", self.next_packet),
-            ("MMS", self.MSS),
-            ("Segs in Net", self.segments_in_net),
-            ("Data Read", self.data_read)]
-        string = ""
-        for pair in pairs:
-            string += "%s: %s\n" % pair
-        print(string)
+        """
+        How many more MSS can you fit into the WINDOW.
+        :return: The number of segments remaining to fit.
+        """
+        return min(self.congestion_window, self.dest_window) / self.MSS - len(self.packets_in_network)
