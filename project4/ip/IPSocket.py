@@ -14,6 +14,9 @@ log = logging.getLogger("ip")
 
 class IPSocket:
     def __init__(self, src_addr):
+        """
+        Creates an IP socket
+        """
         self.connected = False
         self.sendSocket = None
         self.recvSocket = None
@@ -24,11 +27,17 @@ class IPSocket:
         self.src_addr = src_addr
 
     def close(self):
+        """
+        Closes connection
+        """
         self.recvSocket.close()
         self.sendSocket.close()
         self.connected = False
 
     def connect(self, dest):
+        """
+        Opens a connection
+        """
         self.recvSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
         self.recvSocket.setblocking(False)
         self.sendSocket = socket.socket(type=socket.SOCK_RAW, proto=socket.IPPROTO_RAW)
@@ -45,6 +54,11 @@ class IPSocket:
         self.thread.start()
 
     def parse_packet(self, packet):
+        """
+        Checks whether the packet is in the loopback address
+        If not, error-checked with checksum and checked for completeness using 
+        datagram fragmentation
+        """
         if packet.dest not in ["127.0.0.1", self.src_addr] or packet.src != self.dest:
             return
 
@@ -63,6 +77,9 @@ class IPSocket:
             self.check_packet_is_complete(packet.id)
 
     def check_packet_is_complete(self, id):
+        """
+        Checks whether the packet is complete
+        """
         if id not in self.partial_packets:
             return
 
@@ -86,6 +103,9 @@ class IPSocket:
 
 
     def loop(self):
+        """
+        Loops and stores packets in the queue
+        """
         log.debug("Started loop thread")
         while self.connected:
             try:
@@ -98,6 +118,11 @@ class IPSocket:
         log.debug("Ended loop thread")
 
     def recv(self, max=None):
+        """
+        Receives data over the IP connection
+        Checks whether the packet is fully received or if only part of the
+        packet is received by comparing the length of the packet to the MTU
+        """
         if self.partially_recvd_packet is None:
             try:
                 packet = self.complete_packets.get(block=False)
@@ -116,18 +141,30 @@ class IPSocket:
         return recvd
 
     def has_data(self):
+        """
+        Returns when the packet is not empty 
+        """
         return self.partially_recvd_packet is not None or \
                not self.complete_packets.empty()
 
     def wrap_data(self, data):
+        """
+        Encapsulates data in the stack
+        """
         p = IPPacket(self.src_addr, self.dest, data)
         return p.to_bytes()
 
     def send(self, data):
+        """
+        Sends data over the IP connection
+        """
         data = self.wrap_data(data)
         self.sendSocket.send(data)
 
     def shutdown(self, reason):
+        """
+        Blocks connections in both sending and receiving directions
+        """
         self.recvSocket.shutdown()
         self.sendSocket.shutdown()
         self.close()
