@@ -1,1 +1,6 @@
+alias unblock="iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP"
+alias block="iptables -D OUTPUT 1"
+
+unblock
 ./rawhttpget.py $@
+block

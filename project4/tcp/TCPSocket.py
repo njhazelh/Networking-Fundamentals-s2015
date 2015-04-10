@@ -32,7 +32,6 @@ class TCPSocket:
         self.socket = None
         self.data_send_queue = queue.Queue()
         self.data_recv_queue = queue.Queue()
-        self.out_of_order_packets = []
         self.src = (HOST, random.randrange(0, 1 << 16))
         self.state = CONNECTION_STATE.NEW
         self.thread = None
@@ -97,6 +96,9 @@ class TCPSocket:
         # The number of bytes of data read so far.
         self.data_read = 0
 
+        self.out_of_order_packets =  queue.PriorityQueue()
+        self.seen_seq_nums = set()
+
         # start the thread
         self.thread = threading.Thread(name="tcp-loop", target=self.loop)
         self.thread.setDaemon(True)
@@ -143,9 +145,6 @@ class TCPSocket:
             else:
                 self.current_recv_packet = packet[max_bytes:]
                 packet = packet[:max_bytes]
-
-        if len(packet) > 0:
-            print("HOST READ ", packet)
 
         return packet
 
@@ -205,7 +204,7 @@ class TCPSocket:
         #self.force_die()
 
         # Choose the starting seq number
-        self.frontier_seq = random.randrange(0, 1 << 32)
+        self.frontier_seq = 0#random.randrange(0, 1 << 32)
 
         # Send the SYN packet to create the connection
         syn = TCPPacket.syn(self.src, self.dest, self.frontier_seq)
@@ -278,31 +277,44 @@ class TCPSocket:
         self.next_packet['ack'] = (len(packet.data) > 0) or packet.syn
 
         # Update the next expected seq number
-        next_seq = packet.seq + len(packet.data) + 1
-        if packet.seq == self.next_packet['next_expected_seq']:
+        next_seq = packet.seq + len(packet.data)
+        if len(packet.data) > 0 and packet.seq == self.next_packet['next_expected_seq']:
             # This is the packet we need.
             self.next_packet['next_expected_seq'] = next_seq
             self.data_recv_queue.put(packet.data)
-            print("PACKET DATA", packet.data.decode())
+            #print("PACKET DATA for %d" % (packet.seq), packet.data.decode())
             self.data_read += len(packet.data)
-            # TODO: CHECK THE PACKETS THAT ARRIVED TOO EARLY
-        elif next_seq > self.next_packet['next_expected_seq']:
+            print("\n%d packets in out_of_order" % (self.out_of_order_packets.qsize()))
+            print("Next seq number should be %d" % (next_seq))
+            while not self.out_of_order_packets.empty():
+                p = self.out_of_order_packets.get()
+                print("LOOKING AT PACKET %d IN OUT_OF_ORDER" % (p.seq))
+                if p.seq == next_seq:
+                    self.data_recv_queue.put(p.data)
+                    self.data_read += len(p.data)
+                    next_seq = p.seq + len(p.data)
+                    #print("PULLED %d OFF THE QUEUE" % (p.seq))
+                else:
+                    self.out_of_order_packets.put(p)
+                    break
+        elif len(packet.data) > 0 and packet.seq > self.next_packet['next_expected_seq'] and packet.seq not in self.seen_seq_nums:
             # Packet is too early, store it.
-            # TODO: STORE OUT OF ORDER PACKETS
-            pass
+            #print("PACKET %d IS OUT OF ORDER" % (packet.seq))
+            self.out_of_order_packets.put(packet)
+            self.seen_seq_nums.add(packet.seq)
 
         # Ack the packet if it has data
         if self.next_packet['ack']:
             p = TCPPacket.ack(self.src, self.dest, self.frontier_seq, self.next_packet['next_expected_seq'])
             p.set_checksum()
             self.socket.send(p.to_bytes())
-            print("ACKED PACKET = ", p.seq)
+            #print("ACKED PACKET = ", p.ack_num)
 
         self.reset_next_packet()
         self.dest_window = packet.window
 
         if packet.fin:
-            print("SAW A FIN PACKET============================================================================")
+            #print("SAW A FIN PACKET============================================================================")
             self.state = CONNECTION_STATE.FIN_RECVD
         elif packet.rst:
             self.state = CONNECTION_STATE.RST_RECVD
@@ -319,7 +331,7 @@ class TCPSocket:
 
         # Increase sequence number to next byte the destination wants.
         self.frontier_seq = packet.ack_num #self.seq_frontiers.pop()
-        print("FRONTIER = ", self.frontier_seq)
+        #print("FRONTIER = ", self.frontier_seq)
 
         # Find packets that were just acked.
         acked_packets = set()
@@ -379,7 +391,7 @@ class TCPSocket:
         max_packet_size = self.MSS
 
         if len(packet) <= max_packet_size:
-            print("RESENT PACKET\n==============================", packet)
+            #print("RESENT PACKET\n==============================", packet)
             self.socket.send(packet.to_bytes())
             self.packets_in_network.add((packet, datetime.datetime.now(), True))
             self.current_resend_packet = None
@@ -414,12 +426,12 @@ class TCPSocket:
         # Track that we're sending this packet.
         self.packets_in_network.add((packet, datetime.datetime.now(), False))
 
-        print("\nCREATED PACKET\n=======================================")
-        print(packet)
+        #print("\nCREATED PACKET\n=======================================")
+        #print(packet)
 
         # Send packet
         self.socket.send(packet_bytes)
-        print("SENT PACKET\n\n")
+        #print("SENT PACKET\n\n")
 
 
     def network_space(self):

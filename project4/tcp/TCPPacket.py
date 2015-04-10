@@ -1,5 +1,6 @@
 import struct
 import socket
+import re
 
 from tcp.Exceptions import MalformedPacketException
 
@@ -112,6 +113,9 @@ class TCPPacket:
 
         packet.set_options_from_bytes(data[20: data_offset * 4])
         packet.data = data[data_offset * 4:]
+
+        #print("RAW PACKET DATA\n", data.decode("utf-8", "replace"))
+        #print("\n==================================", packet.data.decode())
 
         packet.bytes = data
 
@@ -273,6 +277,9 @@ class TCPPacket:
             string += "%s: %s\n" % label_value
 
         return string
+
+    def __lt__(self, other):
+        return self.seq < other.seq
 
     def is_valid(self, src, dest):
         check = self.checksum()
