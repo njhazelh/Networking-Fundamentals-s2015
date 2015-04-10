@@ -95,7 +95,8 @@ TCP incorporates a sliding window, and slow start.  It runs in a separate
 thread, so that it can respond to packets in real-time. Sending data wasn't
 as important for this application, since GET doesn't have a body and is a
 relatively short message that's only sent once.  However, we did implement
-RTT and retransmit with slow start.
+RTT and retransmit with slow start.  It also remembers all mis-ordered packets
+so that it can recall them when the missing packet arrives.
 
 ### IP
 IP also runs in it's own thread.

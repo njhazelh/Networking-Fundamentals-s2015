@@ -1,8 +1,5 @@
 #!/bin/bash
 
-alias unblock="iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP"
-alias block="iptables -D OUTPUT 1"
-
-unblock
+sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
 ./rawhttpget.py $@
-block
+sudo iptables -D OUTPUT -p tcp --tcp-flags RST RST -j DROP
