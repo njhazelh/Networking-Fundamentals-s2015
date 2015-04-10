@@ -7,6 +7,7 @@ import socket
 
 from http_browser.Browser import Browser
 from http_browser.HttpServerMessage import HTTP_STATUS
+from tcp.Exceptions import ClosedSocketException
 
 __author__ = "njhazelh"
 
@@ -28,6 +29,9 @@ def main(argv):
         response = browser.get(path, dest=dest)
     except ConnectionRefusedError:
         print("Could not connect to server")
+        sys.exit()
+    except ClosedSocketException:
+        print("Socket was open but closed")
         sys.exit()
     print("Saving response to %s" % (filename))
     saveResponse(response, filename)
