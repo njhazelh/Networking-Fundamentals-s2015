@@ -110,7 +110,7 @@ class IPSocket:
         while self.connected:
             try:
                 response = self.recvSocket.recvfrom(65535)
-            except OSError as e:
+            except socket.error as e:
                 continue
             bytes, addr = response
             packet = IPPacket.from_network(bytes)
