@@ -15,6 +15,9 @@ For the moment, it just returns 127.0.0.1
 The DNS Server was implemented by Nick Jones.
 
 ### HTTP Server
+A simple HTTP Server was implemented using the BasicHTTPServer Python library.  
+The server is given a port and origin server to run on.
+
 The HTTP Server was implemented by Michelle Suk.
 
 ### CDN
@@ -24,6 +27,11 @@ Not Implemented Yet
 To run the DNS Server:
 ```
 ./dnsserver -p PORT -n DOMAIN_TO_SERVE
+```
+
+To run the HTTP Server:
+```
+./httpserver -p PORT -o ORIGIN_NAME
 ```
 
 ## Testing
