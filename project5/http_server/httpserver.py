@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-# httpserver
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+#from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from collections import Counter
-import sys, argparse, getopt
+import sys, argparse
 
 __author__ = 'msuk'
 
@@ -19,7 +18,7 @@ class HTTPHandler:
 		self.origin = origin
 
 	def do_GET(self):
-		#seself.protocol_version()
+		#self.protocol_version()
 		self.send_response(200)
 		self.send_header('Content-type','text/plain')
 		self.end_header() 
@@ -63,43 +62,16 @@ class LFU_cache:
 			# url does not currently exist in the cache
 				self.cache = Counter(url)
 
+def main(args):
+	port = args.port
+	origin = args.origin
+
 """
 Grab port and origin from the command line
 """
-# TODO: Make get_port and get_origin one function
-def get_port(user_input):
-	opts, args = getopt.getopt(user_input[1:], "p:o")
-	# Check if the user inputted two args
-	if len(user_input) < 5 or len(user_input) > 5:
-		print 'usage: ./httpserver -p PORT -o ORIGIN'
-		# Command line either has too many args or not enough
-		# Exit, not return
-		return
-
-	for i, arg in opts:
-		if i == '-p':
-			port = arg
-			#print port
-	return port
-
-def get_origin(user_input):
-	opts, args = getopt.getopt(user_input[1:], "p:o")
-	if len(user_input) < 5 or len(user_input) > 5:
-		# Print statements are for some testing
-		print len(user_input)
-		print user_input
-		print 'usage: ./httpserver -p PORT -o ORIGIN'
-		return
-
-	for i, arg in opts:
-		if i == '-o':
-			origin = arg
-			#print origin
-	return origin
-
-def main():
-	port = get_port(sys.argv)
-	origin = get_origin(sys.argv)
-
 if __name__ == "__main__":
-    main()
+	parser = argparse.ArgumentParser(description="A simple HTTP Server")
+	parser.add_argument('-p', dest = 'port', type = int, required = True, help = "port")
+	parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
+	args = parser.parse_args()
+	main(args)
