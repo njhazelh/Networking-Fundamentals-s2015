@@ -1,90 +1,77 @@
-# httpserver
+#!/usr/bin/python3
 
+# httpserver
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import sys, getopt
+from collections import Counter
+import sys, argparse, getopt
 
 __author__ = 'msuk'
 
-# random number - fix
 MAX_SIZE = 200
 
 """
-	Implement HTTP Server
-	Handles the responses for HTTP Requests
+Implement HTTP Server
+Handles the responses for HTTP Requests
 """
-class HTTPHandler(BaseHTTPRequestHandler):
+class HTTPHandler:
 	def __init__(self, port, origin):
 		self.port = port
 		self.origin = origin
-		return
 
 	def do_GET(self):
-		#TODO: set the real values
-		self.protocol_version('')
-		self.send_response('')
-		self.send_header('')
-		self.end_header('')
-		return
+		#seself.protocol_version()
+		self.send_response(200)
+		self.send_header('Content-type','text/plain')
+		self.end_header() 
 
 	def do_POST(self):
 	# TODO: This can get completed after the milestone
 		return
 
-	def handle(self):
-		return
+"""
+Implement a Least Frequently Used caching algorithm
+"""
+class LFU_cache:
+	def __init__(self):
+		self.cache = Counter()
 
-	def send_response(self):
-		return
-
-	def send_error(self):
-		return
-
-# TODO: Add in status codes for responses Sand requests
-#		Accept connections
-#		HTTP header
-#		Include validation tags for when caching
+	"""
+	Keep track of size of cached objects and update list
+	"""
+	def update_cache(self, url):
+		if len(self.cache) == MAX_SIZE:
+		# cannot add more to the cache
+			for i in range(0, len(self.cache)):
+				if url == self.cache(url):
+					self.cache.update(url)
+				else:
+				# Need to remove the object with the least number of times accessed
+					cache_list = []
+					for i in self.cache.most_common():
+						cache_list[i] = self.cache(i)
+					url_to_del = cache_list[len(self.cache - 1)]
+					del[url_to_del]	
+		else:
+			count = 0
+			for i in range(0, len(self.cache)):
+				if url == self.cache(url):
+					# Increase the count of object accessed
+					self.cache.update(url)
+				else:
+					count = count + 1
+			if count == len(self.cache):
+			# url does not currently exist in the cache
+				self.cache = Counter(url)
 
 """
-	Implement a Least Recently Used caching algorithm
-	*Could be expensive
-"""
-
-def LRU_cache(self, size):
-	cache = []
-	# max size
-	self.size = MAX_SIZE
-	self.age = ''
-	return
-
-"""
-	Keep track of age of cached objects
-	Each time an object is accessed, age of objects updated
-"""
-def cache_control(self, exp_age):
-	for i in range(0,len(cache)-1):
-		if self.age > exp_age:
-			remove_cache()
-			return
-	return
-
-
-def update_cache(self):
-	return
-
-"""
-	If cache reaches max size, least recently used object is removed
-"""
-def remove_cache():
-	return
-
-"""
-	Grab port and origin from the command line
+Grab port and origin from the command line
 """
 # TODO: Make get_port and get_origin one function
 def get_port(user_input):
 	opts, args = getopt.getopt(user_input[1:], "p:o")
 	# Check if the user inputted two args
 	if len(user_input) < 5 or len(user_input) > 5:
+		print 'usage: ./httpserver -p PORT -o ORIGIN'
 		# Command line either has too many args or not enough
 		# Exit, not return
 		return
@@ -92,25 +79,27 @@ def get_port(user_input):
 	for i, arg in opts:
 		if i == '-p':
 			port = arg
-
+			#print port
 	return port
 
 def get_origin(user_input):
 	opts, args = getopt.getopt(user_input[1:], "p:o")
 	if len(user_input) < 5 or len(user_input) > 5:
-		# Exit, not return
+		# Print statements are for some testing
+		print len(user_input)
+		print user_input
+		print 'usage: ./httpserver -p PORT -o ORIGIN'
 		return
 
 	for i, arg in opts:
 		if i == '-o':
 			origin = arg
-
+			#print origin
 	return origin
 
 def main():
 	port = get_port(sys.argv)
 	origin = get_origin(sys.argv)
-	return
 
 if __name__ == "__main__":
     main()
