@@ -18,6 +18,8 @@ The DNS Server was implemented by Nick Jones.
 A simple HTTP Server was implemented using the BasicHTTPServer Python library.  
 The server is given a port and origin server to run on.
 
+The basic caching functionality of our server currently uses a least frequently used algorithm.
+
 The HTTP Server was implemented by Michelle Suk.
 
 ### CDN
@@ -36,3 +38,4 @@ To run the HTTP Server:
 
 ## Testing
 For the DNS server, we tested using wireshark and dig.
+For the HTTP server, we tested using wget.
