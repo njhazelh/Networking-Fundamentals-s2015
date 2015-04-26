@@ -12,24 +12,31 @@ MAX_SIZE = 200
 Implement HTTP Server
 Handles the responses for HTTP Requests
 """
-class HTTPHandler():
-	def __init__(self, port, origin, cache):
+class HTTPHandler(BaseHTTPRequestHandler):
+	def __init__(self, port, origin, cache, *args):
 		print "Initialized"
 		self.port = port
 		self.origin = origin
 		self.cache = cache
+		BaseHTTPRequestHandler.__init__(self, *args)
+		
 
 	def do_GET(self):
-		print "DEBUG"
+		print "In GET"
 		print(self.origin)
+		print "After origin"
 		print(self.port)
-		response = urllib.request.urlopen(self.origin)
-		update_cache(self.cache, response)
+		print "After port before response"
+		response = urllib2.urlopen(self.origin)
+		print "Response:"
+		print(response)
+		self.update_cache(self.cache, response)
 
 		#self.protocol_version()
 		self.send_response(200)
 		self.send_header('Content-type','text/plain')
 		self.end_header()
+		self.wfile.write()
 
 	def do_POST(self):
 	# TODO: This can get completed after the milestone
@@ -95,7 +102,11 @@ def run(port, origin):
 	#httpd = server_class(('', port), handler)
 	print(port)
 	print(origin)
-	httpd = server_class(('', port), HTTPHandler(port, origin, cache))
+	
+	def handler(*args):
+		HTTPHandler(port, origin, cache, *args)
+
+	httpd = server_class(('', port), handler)
 	print "still in run"
 	
 	#TODO: May need to create own method to print the time?
@@ -123,6 +134,8 @@ if __name__ == "__main__":
 	#parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
 	#args = parser.parse_args()
 	#main(args)
-	port = 8080
-	origin = 'ec2-52-4-98-110.compute-1.amazonaws.com'
+	#port = 8080
+	#origin = 'ec2-52-4-98-110.compute-1.amazonaws.com'
+	port = 8000
+	origin = "http://127.0.0.1"
 	run(port, origin)
