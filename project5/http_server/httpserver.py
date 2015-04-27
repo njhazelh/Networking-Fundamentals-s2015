@@ -21,13 +21,33 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		BaseHTTPRequestHandler.__init__(self, *args)
 		
 
+	"""
+	Format of HTTP request for content:
+		'GET /request-URI HTTP/version'
+
+	Format of HTTP response:
+		HTTP/[VERSION] [STATUS CODE] [TEXT PHRASE]
+		Field1: Value1
+		Field2: Value2
+
+		...Document content...
+	"""
 	def do_GET(self):
 		print "In GET"
 		print(self.origin)
 		print "After origin"
 		print(self.port)
 		print "After port before response"
+
+		"""
+		URL format: 'protcol://server/request-URI'
+			protocol: how to tell server which document is being request[HTTP]
+			server: which server to contact
+			request-URI: name to identify document
+		"""
 		response = urllib2.urlopen(self.origin)
+		# CURRENTLY WORKING ON: Parsing URL
+
 		print "Response:"
 		print(response)
 		self.update_cache(self.cache, response)
@@ -114,7 +134,6 @@ def run(port, origin):
 	print "Serving forever"
 	try:
 		httpd.serve_forever()
-		# Do I want this to run forever?
 	except KeyboardInterrupt:
 		pass
 	httpd.server_close()
