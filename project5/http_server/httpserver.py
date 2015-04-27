@@ -19,7 +19,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		self.origin = origin
 		self.cache = cache
 		BaseHTTPRequestHandler.__init__(self, *args)
-		
+		do_GET()
 
 	"""
 	Format of HTTP request for content:
@@ -45,15 +45,29 @@ class HTTPHandler(BaseHTTPRequestHandler):
 			server: which server to contact
 			request-URI: name to identify document
 		"""
-		response = urllib2.urlopen(self.origin)
-		# CURRENTLY WORKING ON: Parsing URL
 
+		print(self.origin)
+		protocol = "http"
+		request = protocol + "://" + self.origin +"/" + url
+		print(request)
+		
+		try:
+			response = urllib.request.urlopen(request)
+		except urllib.error.URLError as err:
+			print "Failed to reach server."
+			print("Reason", err.reason)
+		except urllib.error.HTTPError as err:
+			print "The server couldn't fulfill the request."
+			print("Error code:", err.code)
+		
+		html = response.read()
 		print "Response:"
-		print(response)
+		print(html)
 		self.update_cache(self.cache, response)
 
 		#self.protocol_version()
 		self.send_response(200)
+		# Ordinary text is specified by 'text/plain'
 		self.send_header('Content-type','text/plain')
 		self.end_header()
 		self.wfile.write()
@@ -64,6 +78,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 	"""
 	Keep track of size of cached objects and update list
+		If the desired file is in the cache, file is in server - increase count
+		If the desired file is not in the cache, need to grab from origin server
 	"""
 	def update_cache(self, url, response):
 		if len(self.cache) == MAX_SIZE:
@@ -94,9 +110,12 @@ class HTTPHandler(BaseHTTPRequestHandler):
 			# url does not currently exist in the cache
 				print "Cache Miss"
 				self.cache = Counter(url)
-		download_files(url, response)
+		fetch_files(url, response)
 
-	def download_files(self, url, response):
+	"""
+	Grabs files from the origin server
+	"""
+	def fetch_files(self, url, response):
 		current_file = os.getcwd() + url
 		current_dir = os.path.dirname(current_file)
 		print current_file
@@ -119,7 +138,6 @@ def run(port, origin):
 	server_address = ('', 8000)
 	server_class = HTTPServer
 	cache = Counter()
-	#httpd = server_class(('', port), handler)
 	print(port)
 	print(origin)
 	
@@ -127,7 +145,6 @@ def run(port, origin):
 		HTTPHandler(port, origin, cache, *args)
 
 	httpd = server_class(('', port), handler)
-	print "still in run"
 	
 	#TODO: May need to create own method to print the time?
 	print time.asctime(), "Server is starting - %s:%s" % ('host', port)
@@ -138,11 +155,6 @@ def run(port, origin):
 		pass
 	httpd.server_close()
 	print "\n", time.asctime(), "Server is stopping - %s:%s" %('host', port)
-
-# May take out 
-def run_while_true(port, origin):
-	while keep_running():
-		httpd.handle_request()
 
 """
 Grab port and origin from the command line
