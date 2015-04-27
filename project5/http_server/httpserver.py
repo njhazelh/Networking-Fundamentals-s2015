@@ -9,7 +9,7 @@ __author__ = 'msuk'
 MAX_SIZE = 200
 
 """
-Implement HTTP Server
+Implement HTTP Handler
 Handles the responses for HTTP Requests
 """
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -19,7 +19,6 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		self.origin = origin
 		self.cache = cache
 		BaseHTTPRequestHandler.__init__(self, *args)
-		do_GET()
 
 	"""
 	Format of HTTP request for content:
@@ -48,7 +47,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 		print(self.origin)
 		protocol = "http"
-		request = protocol + "://" + self.origin +"/" + url
+		request = protocol + "://" + self.origin + "/" + url
 		print(request)
 		
 		try:
@@ -61,8 +60,12 @@ class HTTPHandler(BaseHTTPRequestHandler):
 			print("Error code:", err.code)
 		
 		html = response.read()
-		print "Response:"
+		self.path = response.geturl()
+
+		print "Response Read:"
 		print(html)
+		print "Response URL:"
+		print(self.path)
 		self.update_cache(self.cache, response)
 
 		#self.protocol_version()
@@ -164,9 +167,9 @@ if __name__ == "__main__":
 	#parser.add_argument('-p', dest = 'port', type = int, required = True, help = "port")
 	#parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
 	#args = parser.parse_args()
-	#main(args)
+	#run(args)
 	#port = 8080
 	#origin = 'ec2-52-4-98-110.compute-1.amazonaws.com'
 	port = 8000
-	origin = "http://127.0.0.1"
+	origin = "localhost"
 	run(port, origin)
