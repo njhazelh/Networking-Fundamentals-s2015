@@ -35,8 +35,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
 	def do_GET(self):
 		print "In GET"
 		print("Origin:", self.origin)
-		print("Port:", self.port)
 		print("Path?", self.path)
+		default_port = '8080'
+		html = ''
+		response = ''
 
 		"""
 		URL format: 'protocol://server/request-URI'
@@ -44,20 +46,19 @@ class HTTPHandler(BaseHTTPRequestHandler):
 			server: which server to contact
 			request-URI: name to identify document
 		"""
-		port_str = str(port)
-		print("Port as string:", port_str)
+
 		protocol = "http://"
 		print("Protocol:", protocol)
-		request = protocol + self.origin + ":" + port_str + self.path
+		request = protocol + self.origin + ":" + default_port + self.path
 		print("Request:", request)
 		
 		try:
-			response = urllib.request.urlopen(request)
+			response = urllib2.urlopen(request)
 			print("Response was tried!:", response)
-		except urllib.error.URLError as err:
+		except urllib2.URLError as err:
 			print "Failed to reach server."
 			print("Reason", err.reason)
-		except urllib.error.HTTPError as err:
+		except urllib2.HTTPError as err:
 			print "The server couldn't fulfill the request."
 			print("Error code:", err.code)
 		else:
@@ -68,18 +69,37 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		print(html)
 		print "Response URL:"
 		print(self.path)
-		self.update_cache(self.cache, response)
+		#update_cache(self.cache, response)
 
 		#self.protocol_version()
 		self.send_response(200)
 		# Ordinary text is specified by 'text/plain'
 		self.send_header('Content-type','text/plain')
-		self.end_header()
-		self.wfile.write()
+		self.end_headers()
+		self.wfile.write(self.path)
 
 	def do_POST(self):
 	# TODO: This can get completed after the milestone
 		return
+
+
+	"""
+	Grabs files from the origin server
+	"""
+	def fetch_files(self, url, response):
+		current_file = os.getcwd() + url
+		current_dir = os.path.dirname(current_file)
+		print current_file
+		print current_dir
+
+		if os.path.isdir(current_dir):
+			print "Cache hit"
+		else:
+			print "Cache miss"
+
+		write_file = open(curent_file, 'w')
+		write_file.write(response(read))
+
 
 	"""
 	Keep track of size of cached objects and update list
@@ -116,24 +136,6 @@ class HTTPHandler(BaseHTTPRequestHandler):
 				print "Cache Miss"
 				self.cache = Counter(url)
 		fetch_files(url, response)
-
-	"""
-	Grabs files from the origin server
-	"""
-	def fetch_files(self, url, response):
-		current_file = os.getcwd() + url
-		current_dir = os.path.dirname(current_file)
-		print current_file
-		print current_dir
-
-		if os.path.isdir(current_dir):
-			print "Cache hit"
-		else:
-			print "Cache miss"
-
-		write_file = open(curent_file, 'w')
-		write_file.write(response(read))
-
 
 def run(port, origin):
 	#port = args.port
