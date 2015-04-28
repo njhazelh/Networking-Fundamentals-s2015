@@ -11,11 +11,12 @@ MAX_SIZE = 200
 """
 Implement HTTP Handler
 Handles the responses for HTTP Requests
+The web server should communicate with the origin server over the default port.
+Therefore, the port does not need to be specified.
 """
 class HTTPHandler(BaseHTTPRequestHandler):
-	def __init__(self, port, origin, cache, *args):
+	def __init__(self, origin, cache, *args):
 		print "Initialized"
-		self.port = port
 		self.origin = origin
 		self.cache = cache
 		BaseHTTPRequestHandler.__init__(self, *args)
@@ -33,34 +34,35 @@ class HTTPHandler(BaseHTTPRequestHandler):
 	"""
 	def do_GET(self):
 		print "In GET"
-		print(self.origin)
-		print "After origin"
-		print(self.port)
-		print "After port before response"
+		print("Origin:", self.origin)
+		print("Port:", self.port)
+		print("Path?", self.path)
 
 		"""
-		URL format: 'protcol://server/request-URI'
+		URL format: 'protocol://server/request-URI'
 			protocol: how to tell server which document is being request[HTTP]
 			server: which server to contact
 			request-URI: name to identify document
 		"""
-
-		print(self.origin)
-		protocol = "http"
-		request = protocol + "://" + self.origin + "/" + url
-		print(request)
+		port_str = str(port)
+		print("Port as string:", port_str)
+		protocol = "http://"
+		print("Protocol:", protocol)
+		request = protocol + self.origin + ":" + port_str + self.path
+		print("Request:", request)
 		
 		try:
 			response = urllib.request.urlopen(request)
+			print("Response was tried!:", response)
 		except urllib.error.URLError as err:
 			print "Failed to reach server."
 			print("Reason", err.reason)
 		except urllib.error.HTTPError as err:
 			print "The server couldn't fulfill the request."
 			print("Error code:", err.code)
-		
-		html = response.read()
-		self.path = response.geturl()
+		else:
+			html = response.read()
+			self.path = response.geturl()
 
 		print "Response Read:"
 		print(html)
@@ -145,22 +147,23 @@ def run(port, origin):
 	print(origin)
 	
 	def handler(*args):
-		HTTPHandler(port, origin, cache, *args)
+		HTTPHandler(origin, cache, *args)
 
 	httpd = server_class(('', port), handler)
 	
 	#TODO: May need to create own method to print the time?
-	print time.asctime(), "Server is starting - %s:%s" % ('host', port)
+	print time.asctime(), "Server is starting - %s:%s" % ('host_not_specified_yet', port)
 	print "Serving forever"
 	try:
 		httpd.serve_forever()
 	except KeyboardInterrupt:
 		pass
 	httpd.server_close()
-	print "\n", time.asctime(), "Server is stopping - %s:%s" %('host', port)
+	print "\n", time.asctime(), "Server is stopping - %s:%s" %('host_not_specified_yet', port)
 
 """
 Grab port and origin from the command line
+The port is the line of communication between the user and the web server.
 """
 if __name__ == "__main__":
 	#parser = argparse.ArgumentParser(description="A simple HTTP Server")
