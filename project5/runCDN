@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Usage: ./runCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>
+
 dns_server="cs5700cdnproject.ccs.neu.edu"
 port=$2
 origin=$4
