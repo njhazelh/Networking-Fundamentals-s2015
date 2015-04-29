@@ -8,7 +8,7 @@ def domain_to_dns(name):
     """
     converted = b''
     for label in name.split("."):
-        converted += len(label).to_bytes(1, 'big')
+        converted += chr(len(label))
         converted += label.encode()
     converted += b'\x00'
     return converted
