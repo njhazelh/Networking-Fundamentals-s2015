@@ -8,7 +8,7 @@ log = logging.getLogger()
 
 __author__ = 'njhazelh'
 
-UDP_IP = "127.0.0.1"
+UDP_IP = ""
 
 class DNSServer:
     """
