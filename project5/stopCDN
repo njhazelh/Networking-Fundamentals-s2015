@@ -1,3 +1,36 @@
 #!/bin/bash
 
-./python/stopCDN.py $@
+dns_server="cs5700cdnproject.ccs.neu.edu"
+port=$2
+origin=$4
+domain=$6
+username=$8
+keyfile=${10}
+http_servers[0]="ec2-52-0-73-113.compute-1.amazonaws.com"
+http_servers[1]="ec2-52-16-219-28.eu-west-1.compute.amazonaws.com"
+http_servers[2]="ec2-52-11-8-29.us-west-2.compute.amazonaws.com"
+http_servers[3]="ec2-52-8-12-101.us-west-1.compute.amazonaws.com"
+http_servers[4]="ec2-52-28-48-84.eu-central-1.compute.amazonaws.com"
+http_servers[5]="ec2-52-68-12-77.ap-northeast-1.compute.amazonaws.com"
+http_servers[6]="ec2-52-74-143-5.ap-southeast-1.compute.amazonaws.com"
+http_servers[7]="ec2-52-64-63-125.ap-southeast-2.compute.amazonaws.com"
+http_servers[8]="ec2-54-94-214-108.sa-east-1.compute.amazonaws.com"
+
+echo "DNS: $dns_server"
+echo "PORT: $port"
+echo "ORIGIN: $origin"
+echo "DOMAIN: $domain"
+echo "USERNAME: $username"
+echo "KEYFILE: $keyfile"
+echo ""
+
+# Copy Files to DNS Server
+echo -e "Stopping DNS Server on $dns_server."
+ssh -i $keyfile $username@$dns_server "killall -u $username main.py"
+
+# Copy Files to HTTP Server
+for server in "${http_servers[@]}"
+do
+    echo -e "Stopping HTTP Server on $server."
+    #ssh -i $keyfile $username@$server "killall -u $username httpserver.py"
+done

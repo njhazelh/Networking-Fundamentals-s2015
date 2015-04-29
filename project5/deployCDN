@@ -29,9 +29,12 @@ echo ""
 
 
 # Make the dist folders
+echo -e "\e[1;90mMaking Dist\e[0m"
 make dist
+echo ""
 
 # Copy Files to DNS Server
+echo -e "\e[1;90mUploading DNS Server to $dns_server.\e[0m"
 ssh -i $keyfile $username@$dns_server "rm -rf dns_server; mkdir -p dns_server"
 scp -r -i $keyfile dns_dist/* $username@$dns_server:dns_server
 echo ""
@@ -39,11 +42,11 @@ echo ""
 # Copy Files to HTTP Server
 for server in "${http_servers[@]}"
 do
-    echo "Uploading HTTP Server to $server."
+    echo -e "\e[1;90mUploading HTTP Server to $server.\e[0m"
     ssh -i $keyfile $username@$server "rm -rf http_server; mkdir -p http_server"
     scp -r -i $keyfile http_dist/* $username@$server:http_server
     echo ""
-done
+done;
 
 # Clean up dist folders
 make clean_dist
