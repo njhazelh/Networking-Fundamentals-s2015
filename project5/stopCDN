@@ -34,5 +34,5 @@ ssh -i $keyfile $username@$dns_server "killall -u $username main.py"
 for server in "${http_servers[@]}"
 do
     echo -e "Stopping HTTP Server on $server."
-    #ssh -i $keyfile $username@$server "killall -u $username httpserver.py"
+    ssh -i $keyfile $username@$server "killall -u $username httpserver.py"
 done
