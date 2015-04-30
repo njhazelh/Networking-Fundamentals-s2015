@@ -1,189 +1,92 @@
 #!/usr/bin/python
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from collections import Counter
-import sys, argparse, urllib, urllib2, time, os
+import logging
+import urllib2
+from OriginGetCache import OriginGetCache
 
 __author__ = 'msuk'
 
-MAX_SIZE = 200
+logging.basicConfig(
+    format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+    datefmt='%I:%M:%S'
+)
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
 
-"""
-Implement HTTP Handler
-Handles the responses for HTTP Requests
-The web server should communicate with the origin server over the default port.
-Therefore, the port does not need to be specified.
-"""
-class HTTPHandler(BaseHTTPRequestHandler):
-	def __init__(self, origin, cache, *args):
-		print "Initialized"
-		self.origin = origin
-		self.cache = cache
-		BaseHTTPRequestHandler.__init__(self, *args)
+ORIGIN_CACHE = OriginGetCache()
 
-	"""
-	Format of HTTP request for content:
-		'GET /request-URI HTTP/version'
+class CDNHandler(BaseHTTPRequestHandler):
+    """
+    Implement HTTP Handler
+    Handles the responses for HTTP Requests
+    The web server should communicate with the origin server over the default port.
+    Therefore, the port does not need to be specified.
 
-	Format of HTTP response:
-		HTTP/[VERSION] [STATUS CODE] [TEXT PHRASE]
-		Field1: Value1
-		Field2: Value2
-	"""
+    Format of HTTP request for content:
+    'GET /request-URI HTTP/version'
 
-	"""
-	Grabs files from the origin server
-	"""
-	def fetch_files(self, response_path):
-		current_file = os.getcwd() + response_path
-		current_dir = os.path.dirname(current_file)
-		print current_file
-		print current_dir
+    Format of HTTP response:
+        HTTP/[VERSION] [STATUS CODE] [TEXT PHRASE]
+        Field1: Value1
+        Field2: Value2
+    """
+    def do_GET(self):
+        log.debug("Asked for GET %s", self.path)
 
-		if os.path.isdir(current_dir):
-			print "Cache hit"
-		else:
-			print "Cache miss"
+        if ORIGIN_CACHE.has(self.path):
+            log.debug("%s is in the cache", self.path)
+            message = ORIGIN_CACHE.get(self.path)
+            response_code = 200
+            headers = []
+        else:
+            log.debug("Fetching %s from origin(%s)", self.path, self.server.origin)
+            response_code, headers, message = self.get_from_origin(self.path)
+            self.cache_response(response_code, headers, message)
 
-		write_file = open(current_file, 'w')
-		write_file.write(response(read))
+        self.reply(response_code, headers, message)
 
+    def cache_response(self, response_code, headers, message):
+        if response_code == 200:
+            ORIGIN_CACHE.store(self.path, message)
 
-	"""
-	Keep track of size of cached objects and update list
-		If the desired file is in the cache, file is in server - increase count
-		If the desired file is not in the cache, need to grab from origin server
-	"""
-	def update_cache(self, url, response):
-		print "In update cache"
-		count = 0
-		if len(self.cache) == MAX_SIZE:
-		# cannot add more to the cache
-			for i in range(0, len(self.cache)):
-				if url == self.cache(url):
-					print "The path was found in the dictionary!"
-					self.cache.update(url)
-				else:
-				# Need to remove the object with the least number of times accessed
-					print "The path was not found in the dictionary!"
-					cache_list = []
-					for i in self.cache.most_common():
-						cache_list[i] = self.cache(i)
-						url_to_del = cache_list[len(self.cache - 1)]
-						del[url_to_del]	
-		else:
-			for i in range(0, len(self.cache)):
-				if url == self.cache(url):
-					"Cache Hit"
-					# Increase the count of object accessed
-					self.cache.update(url)
-				else:
-					print "Cache Miss"
-					count = count + 1
-			if count == len(self.cache):
-			# url does not currently exist in the cache
-				print "Cache Miss"
-				self.cache = Counter(url)
-		self.fetch_files(response)
+    def get_from_origin(self, path):
+        request_url = "http://%s:%d%s" % (self.server.origin, self.server.origin_port, path)
 
-	def do_GET(self):
-		print "In GET"
-		print("Origin:", self.origin)
-		print("Path?", self.path)
-		default_port = '8080'
-		html = ''
-		response = ''
-		resp = ''
+        try:
+            origin_request = urllib2.urlopen(request_url).read()
+            return 200, [], origin_request
+        except urllib2.HTTPError as e:
+            return e.getcode(), [], ""
+        except urllib2.URLError as e:
+            log.debug(e)
+            return 500, [], ""
 
-		"""
-		URL format: 'protocol://server/request-URI'
-			protocol: how to tell server which document is being request[HTTP]
-			server: which server to contact
-			request-URI: name to identify document
-		"""
+    def reply(self, response_code, headers, message):
+        self.send_response(response_code)
+        for key, value in headers:
+            self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(message)
 
-		protocol = "http://"
-		print("Protocol:", protocol)
-		#request = protocol + self.origin + ":" + default_port + self.path
-		request = protocol + self.path
-		print("Request:", request)
-		
-		if os.path.exists(request):
-			print "Cache hit"
-		else:
-			print "Cache miss"	
-			try:
-				response = urllib2.urlopen(request).readlines()
-				print(response)
-			except urllib2.URLError as err:
-				print "Failed to reach server."
-				print(err.reason)
-			except urllib2.HTTPError as err:
-				print "The server couldn't fulfill the request."
-				print(err.getcode())
-			else:
-				html = response.read()
-				resp = response.geturl()
+def main(port, origin):
+    server = HTTPServer(('', port), CDNHandler)
+    server.origin = origin
+    server.origin_port = 8080
 
-		print "Response Read:"
-		print(html)
-		print "Response URL:"
-		print(resp)
-		self.update_cache(self.cache, response)
+    log.debug("Starting server on port %d", port)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    server.server_close()
+    log.debug("Stopping server.")
 
 
-		#self.protocol_version()
-		self.send_response(200)
-		# Ordinary text is specified by 'text/plain'
-		self.send_header('Content-type','text/plain')
-		self.end_headers()
-		self.wfile.write("This should be where the response goes")
-		self.wfile.write(response)
-		# The response should be what is being written
-
-	def do_POST(self):
-	# TODO: This can get completed after the milestone
-		return
-
-def run(port, origin):
-	#port = args.port
-	#origin = args.origin
-
-	# Sever address comes from DNS
-	server_address = ('', 8000)
-	server_class = HTTPServer
-	cache = Counter()
-	print(port)
-	print(origin)
-	# Do I need to bind the server/socket to the port?  Since I am not specifying the host being used
-	
-	def handler(*args):
-		HTTPHandler(origin, cache, *args)
-	httpd = server_class(('', port), handler)
-	
-	print time.asctime(), "Server is starting - %s:%s" % ('host_not_specified_yet', port)
-	print "Serving forever"
-	try:
-		httpd.serve_forever()
-	except KeyboardInterrupt:
-		pass
-	httpd.server_close()
-	print "\n", time.asctime(), "Server is stopping - %s:%s" %('host_not_specified_yet', port)
-
-"""
-Grab port and origin from the command line
-The port is the line of communication between the user and the web server.
-"""
 if __name__ == "__main__":
-	#parser = argparse.ArgumentParser(description="A simple HTTP Server")
-	#parser.add_argument('-p', dest = 'port', type = int, required = True, help = "port")
-	#parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
-	#args = parser.parse_args()
-	#run(args)
-
-	# Put these two in here just for testing
-	#port = 8080
-	#origin = 'ec2-52-4-98-110.compute-1.amazonaws.com'
-	port = 43434
-	origin = "localhost"
-	run(port, origin)
+    import argparse
+    parser = argparse.ArgumentParser(description="A simple HTTP Server")
+    parser.add_argument('-p', dest = 'port', type = int, required = True, help = "port")
+    parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
+    args = parser.parse_args()
+    main(args.port, args.origin)
