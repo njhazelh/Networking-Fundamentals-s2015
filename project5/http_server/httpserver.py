@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from collections import Counter
@@ -29,65 +29,13 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		HTTP/[VERSION] [STATUS CODE] [TEXT PHRASE]
 		Field1: Value1
 		Field2: Value2
-
-		...Document content...
 	"""
-	def do_GET(self):
-		print "In GET"
-		print("Origin:", self.origin)
-		print("Path?", self.path)
-		default_port = '8080'
-		html = ''
-		response = ''
-
-		"""
-		URL format: 'protocol://server/request-URI'
-			protocol: how to tell server which document is being request[HTTP]
-			server: which server to contact
-			request-URI: name to identify document
-		"""
-
-		protocol = "http://"
-		print("Protocol:", protocol)
-		request = protocol + self.origin + ":" + default_port + self.path
-		print("Request:", request)
-		
-		try:
-			response = urllib2.urlopen(request)
-			print("Response was tried!:", response)
-		except urllib2.URLError as err:
-			print "Failed to reach server."
-			print("Reason", err.reason)
-		except urllib2.HTTPError as err:
-			print "The server couldn't fulfill the request."
-			print("Error code:", err.code)
-		else:
-			html = response.read()
-			self.path = response.geturl()
-
-		print "Response Read:"
-		print(html)
-		print "Response URL:"
-		print(self.path)
-		#update_cache(self.cache, response)
-
-		#self.protocol_version()
-		self.send_response(200)
-		# Ordinary text is specified by 'text/plain'
-		self.send_header('Content-type','text/plain')
-		self.end_headers()
-		self.wfile.write(self.path)
-
-	def do_POST(self):
-	# TODO: This can get completed after the milestone
-		return
-
 
 	"""
 	Grabs files from the origin server
 	"""
-	def fetch_files(self, url, response):
-		current_file = os.getcwd() + url
+	def fetch_files(self, response_path):
+		current_file = os.getcwd() + response_path
 		current_dir = os.path.dirname(current_file)
 		print current_file
 		print current_dir
@@ -97,7 +45,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		else:
 			print "Cache miss"
 
-		write_file = open(curent_file, 'w')
+		write_file = open(current_file, 'w')
 		write_file.write(response(read))
 
 
@@ -107,22 +55,23 @@ class HTTPHandler(BaseHTTPRequestHandler):
 		If the desired file is not in the cache, need to grab from origin server
 	"""
 	def update_cache(self, url, response):
+		print "In update cache"
+		count = 0
 		if len(self.cache) == MAX_SIZE:
 		# cannot add more to the cache
 			for i in range(0, len(self.cache)):
 				if url == self.cache(url):
-					print "Cache Hit"
+					print "The path was found in the dictionary!"
 					self.cache.update(url)
 				else:
 				# Need to remove the object with the least number of times accessed
-					print "Cache Miss"
+					print "The path was not found in the dictionary!"
 					cache_list = []
 					for i in self.cache.most_common():
 						cache_list[i] = self.cache(i)
 						url_to_del = cache_list[len(self.cache - 1)]
 						del[url_to_del]	
 		else:
-			count = 0
 			for i in range(0, len(self.cache)):
 				if url == self.cache(url):
 					"Cache Hit"
@@ -135,7 +84,66 @@ class HTTPHandler(BaseHTTPRequestHandler):
 			# url does not currently exist in the cache
 				print "Cache Miss"
 				self.cache = Counter(url)
-		fetch_files(url, response)
+		self.fetch_files(response)
+
+	def do_GET(self):
+		print "In GET"
+		print("Origin:", self.origin)
+		print("Path?", self.path)
+		default_port = '8080'
+		html = ''
+		response = ''
+		resp = ''
+
+		"""
+		URL format: 'protocol://server/request-URI'
+			protocol: how to tell server which document is being request[HTTP]
+			server: which server to contact
+			request-URI: name to identify document
+		"""
+
+		protocol = "http://"
+		print("Protocol:", protocol)
+		#request = protocol + self.origin + ":" + default_port + self.path
+		request = protocol + self.path
+		print("Request:", request)
+		
+		if os.path.exists(request):
+			print "Cache hit"
+		else:
+			print "Cache miss"	
+			try:
+				response = urllib2.urlopen(request).readlines()
+				print(response)
+			except urllib2.URLError as err:
+				print "Failed to reach server."
+				print(err.reason)
+			except urllib2.HTTPError as err:
+				print "The server couldn't fulfill the request."
+				print(err.getcode())
+			else:
+				html = response.read()
+				resp = response.geturl()
+
+		print "Response Read:"
+		print(html)
+		print "Response URL:"
+		print(resp)
+		self.update_cache(self.cache, response)
+
+
+		#self.protocol_version()
+		self.send_response(200)
+		# Ordinary text is specified by 'text/plain'
+		self.send_header('Content-type','text/plain')
+		self.end_headers()
+		self.wfile.write("This should be where the response goes")
+		self.wfile.write(response)
+		# The response should be what is being written
+
+	def do_POST(self):
+	# TODO: This can get completed after the milestone
+		return
 
 def run(port, origin):
 	#port = args.port
@@ -147,13 +155,12 @@ def run(port, origin):
 	cache = Counter()
 	print(port)
 	print(origin)
+	# Do I need to bind the server/socket to the port?  Since I am not specifying the host being used
 	
 	def handler(*args):
 		HTTPHandler(origin, cache, *args)
-
 	httpd = server_class(('', port), handler)
 	
-	#TODO: May need to create own method to print the time?
 	print time.asctime(), "Server is starting - %s:%s" % ('host_not_specified_yet', port)
 	print "Serving forever"
 	try:
@@ -173,8 +180,10 @@ if __name__ == "__main__":
 	#parser.add_argument('-o', dest = 'origin', type = str, required = True, help = "origin server name")
 	#args = parser.parse_args()
 	#run(args)
+
+	# Put these two in here just for testing
 	#port = 8080
 	#origin = 'ec2-52-4-98-110.compute-1.amazonaws.com'
-	port = 8000
+	port = 43434
 	origin = "localhost"
 	run(port, origin)
