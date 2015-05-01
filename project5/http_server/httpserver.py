@@ -54,7 +54,8 @@ class CDNHandler(BaseHTTPRequestHandler):
         request_url = "http://%s:%d%s" % (self.server.origin, self.server.origin_port, path)
 
         try:
-            origin_request = urllib2.urlopen(request_url).read()
+            s = urllib2.urlopen(request_url)
+            origin_request = s.read()
             return 200, [], origin_request
         except urllib2.HTTPError as e:
             return e.getcode(), [], ""
@@ -63,6 +64,12 @@ class CDNHandler(BaseHTTPRequestHandler):
             return 500, [], ""
 
     def reply(self, response_code, headers, message):
+        """
+        Send a reply to the client
+        :param response_code: The HTTP response code of the reply. Eg. 200 is Success.
+        :param headers: A list of the headers for the message.
+        :param message: The body of the response.
+        """
         self.send_response(response_code)
         for key, value in headers:
             self.send_header(key, value)
@@ -70,6 +77,11 @@ class CDNHandler(BaseHTTPRequestHandler):
         self.wfile.write(message)
 
 def main(port, origin):
+    """
+    Entry Point
+    :param port: The port to run the server on
+    :param origin: The domain name of the origin.
+    """
     server = HTTPServer(('', port), CDNHandler)
     server.origin = origin
     server.origin_port = 8080
