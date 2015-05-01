@@ -5,14 +5,14 @@ import logging
 import urllib2
 from OriginGetCache import OriginGetCache
 
-__author__ = 'msuk'
+__author__ = 'msuk njhazelh'
 
 logging.basicConfig(
     format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
     datefmt='%I:%M:%S'
 )
 log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.CRITICAL)
 
 ORIGIN_CACHE = OriginGetCache()
 
