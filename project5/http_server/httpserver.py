@@ -46,6 +46,12 @@ class CDNHandler(BaseHTTPRequestHandler):
 
         self.reply(response_code, headers, message)
 
+    def log_message(self, format,*args):
+        """
+        Kill the default logger.
+        """
+        return
+
     def cache_response(self, response_code, headers, message):
         if response_code == 200:
             ORIGIN_CACHE.store(self.path, message)

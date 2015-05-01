@@ -5,7 +5,7 @@ from datetime import datetime
 __author__ = 'njhazelh'
 
 log = logging.getLogger("Cache")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.CRITICAL)
 
 MAX_SIZE = 9 * (2 ** 20) # 9 MB to give a 1MB buffer on the max.
 

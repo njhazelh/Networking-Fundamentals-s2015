@@ -23,31 +23,39 @@ The DNS server chooses from one of several ip addresses to EC2 servers, which
 it looks up using their respective domain names when the server first starts.
 At the moment, the selection process if completely random, since we ran out of
 time while implementing the rest of the code due to final projects in other
-classes.  As such, performance is rather bad.
+classes.  As such, performance is rather bad.  If we had more time we would
+pursue a combination of GeoIP and active monitoring.  It would be interesting
+to try teaching the allocation policy to the dns server using Perceptron
+classification or some other form of AI.  To do this, however, we would need
+a significantly better testing system, so we could run thousands of iterations
+against the servers.
 
 The DNS Server was implemented by Nick Jones.
 
 ### HTTP Server
 A simple HTTP Server was implemented using the BasicHTTPServer Python library.
 The server is given a port run on and an origin server.  The http server assumes
-that the origin server is running on port 8080.
+that the origin server is running on port 8080 as stated in
+/course/cs5700sp15/ec2-hosts.txt on the CCIS servers.
 
 The basic caching functionality of our server currently uses a least
 frequently used algorithm.  It stores data using the python shelve module, which
 is a persistent keystore.  We decided on this, because it would allow us to manage
 the files that we need easily.  We would liked to have used MongoDB or Redis, but
 these would have needed installation on the server, and taken up space.  Shelve
-is lightweight and standard to python.  Hopefully it is efficient enough.
+is lightweight and standard to python.  Hopefully it is efficient enough under
+the load of several thousand entries.
 
 We keep track of data usage using a slightly imperfect method.  First, we
 assume that the data used by an entry is the sum of the number of characters in
-its path and body.  In python memory, there is a small overhead for strings, and
-in shelve (which uses pickle) there may be meta data.  On the other hand, pickle
-seems to have a certain degree of compression.  Hopefully, any overhead
-will be insignificant compared to the data size.  We set our limit to 9MB instead
-of 10MB to give a solid buffer for us to work within.  There may be better ways
-to do this, but since we implemented using python, dealing directly with data
-size in bytes is somewhat more difficult than with a language like C.
+its path and body.  In python memory, there is a small overhead of about
+20 Bytes for strings, and in shelve (which uses pickle) there may be meta data.
+On the other hand, pickle seems to have a certain degree of compression.
+Hopefully, any overhead will be insignificant compared to the data size.
+We set our limit to 9MB instead of 10MB to give a solid buffer for us to work
+within.  There may be better ways to do this, but since we implemented using
+python, dealing directly with data size in bytes is somewhat more difficult
+than with a language like C.
 
 The HTTP Server was started by Michelle Suk and finished by Nick Jones.
 
@@ -59,7 +67,9 @@ The port number given is used for both the http and dns servers, as stated in
 the project requirements.
 
 The run script starts the dns and http servers using nohup and catches the
-output in log files.
+output in log files.  While we have log statements throughout the code, these
+are currently set to a CRITICAL only level.  Our statements are DEBUG level, so
+there shouldn't be any output.
 
 The stop script stops the dns and http servers using
 ```killall -u $username <process name>```
