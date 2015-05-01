@@ -10,7 +10,7 @@ logging.basicConfig(
     datefmt='%I:%M:%S'
 )
 log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.CRITICAL)
 
 __author__ = "njhazelh"
 

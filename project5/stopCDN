@@ -1,6 +1,10 @@
 #!/bin/bash
 
-# Usage: ./stopCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>
+if [ $# -ne 10 ]
+then
+    echo "Usage: ./runCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
+    exit
+fi
 
 dns_server="cs5700cdnproject.ccs.neu.edu"
 port=$2

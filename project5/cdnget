@@ -1,0 +1,12 @@
+
+# Usage: ./cdnget <domain> <port> <file>
+
+echo "Starting"
+
+ip="$(dig +short $1 @cs5700cdnproject.ccs.neu.edu -p $2)"
+target="$ip:$2$3"
+
+echo $ip
+echo $target
+
+curl -v $target
