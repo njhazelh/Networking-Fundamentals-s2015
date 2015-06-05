@@ -20,4 +20,4 @@ Basically wget.  We had to implement TCP and IP.  We also repurposed our
 work from Project 2.
 
 ### Assignment 5:
-A CDN.  We haven't done this yet.
+A CDN (Content Distribution Network).  The basic concept of this project was that the professor set up a server of public wiki information located at a fixed location.  We were provided with a collection of EC2 instances located throughout the world and a DNS server located on the NEU CCIS network.  Our job was to create two programs.  The first was a web server that served cached information from the origin server.  The second was a DNS server that could be queried for a specific DNS address and would respond with the IP address of the web cache that would give the optimal responsiveness.
